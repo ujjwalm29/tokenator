@@ -6,6 +6,7 @@ tokenator/__init__.py
 tokenator/client_openai.py
 tokenator/cost.py
 tokenator/models.py
+tokenator/schemas.py
 tokenator/utils.py
 tokenator.egg-info/PKG-INFO
 tokenator.egg-info/SOURCES.txt

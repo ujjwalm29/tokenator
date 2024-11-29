@@ -7,7 +7,7 @@ import logging
 
 # Add logging config at the top after imports
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
@@ -27,6 +27,7 @@ completion = client.chat.completions.create(
 )
 
 print(completion.choices[0].message)
+print("-"*100)
 print(completion.usage)
-
-print(cost.last_hour("openai"))
+print("-"*100)
+print(cost.last_hour("openai").model_dump_json(indent=2))
