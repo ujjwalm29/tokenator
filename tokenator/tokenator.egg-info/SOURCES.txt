@@ -1,6 +1,7 @@
 LICENSE
 README.md
 setup.py
+tests/__init__.py
 tokenator/__init__.py
 tokenator/client_openai.py
 tokenator/cost.py

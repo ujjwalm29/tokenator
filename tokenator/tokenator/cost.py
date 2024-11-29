@@ -7,12 +7,24 @@ from sqlalchemy import and_
 
 from .models import get_session, TokenUsage
 
-MODEL_COSTS = {
-    "gpt-4o-2024-08-06": {
-        "prompt": 3,
-        "completion": 6
-    }
-}
+import requests
+
+def get_model_costs():
+    url = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+    response = requests.get(url)
+    data = response.json()
+    
+    MODEL_COSTS = {}
+    for model, info in data.items():
+        if "input_cost_per_token" in info and "output_cost_per_token" in info:
+            MODEL_COSTS[model] = {
+                "prompt": info["input_cost_per_token"],
+                "completion": info["output_cost_per_token"]
+            }
+    
+    return MODEL_COSTS
+
+MODEL_COSTS = get_model_costs()
 
 def _calculate_cost(usages: list[TokenUsage], provider: str) -> Dict:
     """Calculate cost from token usage records."""
