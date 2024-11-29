@@ -1,0 +1,11 @@
+.env
+*.db
+*.db-shm
+*.db-wal
+
+.DS_Store
+.cursorignore
+.venv
+venv
+
+__pycache__/
