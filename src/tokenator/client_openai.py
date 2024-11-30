@@ -1,33 +1,33 @@
 """OpenAI client wrapper with token usage tracking."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union, overload
 import logging
 
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
 
 from .models import get_session, TokenUsage
 
 logger = logging.getLogger(__name__)
 
-class OpenAIWrapper:
-    def __init__(self, client: OpenAI, db_path: Optional[str] = None):
+class BaseOpenAIWrapper:
+    def __init__(self, client: Union[OpenAI, AsyncOpenAI], db_path: Optional[str] = None):
         """Initialize the OpenAI wrapper."""
         self.client = client
-        self.Session = get_session(db_path)
-        
-        logger.debug("Initializing OpenAIWrapper with db_path: %s", db_path)
-        
-        # Ensure database directory exists
+
         if db_path:
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
             logger.info("Created database directory at: %s", Path(db_path).parent)
 
-    def _log_usage(self, model: str, usage: Dict[str, int]):
-        """Log token usage to database using SQLAlchemy."""
+        self.Session = get_session(db_path)
+        
+        logger.debug("Initializing %s with db_path: %s", 
+                    self.__class__.__name__, db_path)
+
+    def _log_usage_impl(self, model: str, usage: Dict[str, int], session) -> None:
+        """Implementation of token usage logging."""
         logger.debug("Logging usage for model %s: %s", model, usage)
-        session = self.Session()
         try:
             token_usage = TokenUsage(
                 provider="openai",
@@ -37,41 +37,101 @@ class OpenAIWrapper:
                 total_tokens=usage.get("total_tokens", 0)
             )
             session.add(token_usage)
-            session.commit()
             logger.info("Logged token usage: model=%s, total_tokens=%d", 
                        model, usage.get("total_tokens", 0))
         except Exception as e:
             logger.error("Failed to log token usage: %s", str(e))
             raise
-        finally:
-            session.close()
 
-    @property
-    def chat(self):
-        return ChatCompletionWrapper(self)
-
-class ChatCompletionWrapper:
-    def __init__(self, wrapper: OpenAIWrapper):
-        self.wrapper = wrapper
-        self.completions = self
-        logger.debug("Initialized ChatCompletionWrapper")
-
-    def create(self, *args: Any, **kwargs: Any) -> ChatCompletion:
-        """Create a chat completion and log token usage."""
-        logger.debug("Creating chat completion with args: %s, kwargs: %s", args, kwargs)
-        response = self.wrapper.client.chat.completions.create(*args, **kwargs)
-        
+    def _process_response_usage(self, response: ChatCompletion) -> Optional[Dict[str, Any]]:
+        """Process and log usage statistics from a response."""
         if hasattr(response, "usage"):
             logger.debug("Response usage stats: %s", response.usage)
-            self.wrapper._log_usage(
-                model=response.model,
-                usage={
+            return {
+                "model": response.model,
+                "usage": {
                     "prompt_tokens": response.usage.prompt_tokens,
                     "completion_tokens": response.usage.completion_tokens,
                     "total_tokens": response.usage.total_tokens,
                 }
-            )
-        else:
-            logger.warning("No usage stats available in response")
+            }
+        logger.warning("No usage stats available in response")
+        return None
+
+    @property
+    def chat(self):
+        return self
+
+    @property
+    def completions(self):
+        return self
+
+class OpenAIWrapper(BaseOpenAIWrapper):
+    def _log_usage(self, model: str, usage: Dict[str, int]):
+        session = self.Session()
+        try:
+            self._log_usage_impl(model, usage, session)
+            session.commit()
+        finally:
+            session.close()
+
+    def create(self, *args: Any, **kwargs: Any) -> ChatCompletion:
+        """Create a chat completion and log token usage."""
+        logger.debug("Creating chat completion with args: %s, kwargs: %s", args, kwargs)
+        response = self.client.chat.completions.create(*args, **kwargs)
+        
+        usage_data = self._process_response_usage(response)
+        if usage_data:
+            self._log_usage(**usage_data)
         
         return response
+
+class AsyncOpenAIWrapper(BaseOpenAIWrapper):
+    async def _log_usage(self, model: str, usage: Dict[str, int]):
+        session = self.Session()
+        try:
+            self._log_usage_impl(model, usage, session)
+            await session.commit()
+        finally:
+            await session.close()
+
+    async def create(self, *args: Any, **kwargs: Any) -> ChatCompletion:
+        """Create a chat completion and log token usage."""
+        logger.debug("Creating chat completion with args: %s, kwargs: %s", args, kwargs)
+        response = await self.client.chat.completions.create(*args, **kwargs)
+        
+        usage_data = self._process_response_usage(response)
+        if usage_data:
+            await self._log_usage(**usage_data)
+        
+        return response
+
+@overload
+def tokenator_openai(
+    client: OpenAI,
+    db_path: Optional[str] = None,
+) -> OpenAIWrapper: ...
+
+@overload
+def tokenator_openai(
+    client: AsyncOpenAI,
+    db_path: Optional[str] = None,
+) -> AsyncOpenAIWrapper: ...
+
+def tokenator_openai(
+    client: Union[OpenAI, AsyncOpenAI],
+    db_path: Optional[str] = None,
+) -> Union[OpenAIWrapper, AsyncOpenAIWrapper]:
+    """Create a token-tracking wrapper for an OpenAI client.
+    
+    Args:
+        client: OpenAI or AsyncOpenAI client instance
+        db_path: Optional path to SQLite database for token tracking
+    """
+    if isinstance(client, OpenAI):
+        return OpenAIWrapper(client=client, db_path=db_path)
+    
+    if isinstance(client, AsyncOpenAI):
+        return AsyncOpenAIWrapper(client=client, db_path=db_path)
+        
+    raise ValueError("Client must be an instance of OpenAI or AsyncOpenAI")
