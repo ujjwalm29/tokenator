@@ -4,8 +4,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, Index
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 
 from .utils import get_default_db_path
 

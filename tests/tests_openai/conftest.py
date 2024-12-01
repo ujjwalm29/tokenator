@@ -1,6 +1,7 @@
 import pytest
 from openai import OpenAI, AsyncOpenAI
-from openai.types.chat import ChatCompletion, CompletionUsage
+from openai.types.chat import ChatCompletion
+from openai.types import CompletionUsage
 
 @pytest.fixture
 def mock_usage():

@@ -1,4 +1,0 @@
-openai
-python-dotenv
-requests
-alembic

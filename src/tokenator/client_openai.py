@@ -41,11 +41,11 @@ class BaseOpenAIWrapper:
                        model, usage.get("total_tokens", 0))
         except Exception as e:
             logger.error("Failed to log token usage: %s", str(e))
-            raise
+
 
     def _process_response_usage(self, response: ChatCompletion) -> Optional[Dict[str, Any]]:
         """Process and log usage statistics from a response."""
-        if hasattr(response, "usage"):
+        if hasattr(response, "usage") and response.usage is not None:
             logger.debug("Response usage stats: %s", response.usage)
             return {
                 "model": response.model,
@@ -70,8 +70,12 @@ class OpenAIWrapper(BaseOpenAIWrapper):
     def _log_usage(self, model: str, usage: Dict[str, int]):
         session = self.Session()
         try:
-            self._log_usage_impl(model, usage, session)
-            session.commit()
+            try:
+                self._log_usage_impl(model, usage, session)
+                session.commit()
+            except Exception as e:
+                logger.error("Failed to log token usage: %s", str(e))
+                session.rollback()
         finally:
             session.close()
 
@@ -90,10 +94,14 @@ class AsyncOpenAIWrapper(BaseOpenAIWrapper):
     async def _log_usage(self, model: str, usage: Dict[str, int]):
         session = self.Session()
         try:
-            self._log_usage_impl(model, usage, session)
-            await session.commit()
+            try:
+                self._log_usage_impl(model, usage, session)
+                session.commit()
+            except Exception as e:
+                logger.error("Failed to log token usage: %s", str(e))
+                session.rollback()
         finally:
-            await session.close()
+            session.close()
 
     async def create(self, *args: Any, **kwargs: Any) -> ChatCompletion:
         """Create a chat completion and log token usage."""
