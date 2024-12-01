@@ -35,10 +35,16 @@ def test_init_invalid_client():
     with pytest.raises(ValueError, match="Client must be an instance"):
         tokenator_openai(Mock())
 
-def test_db_path_creation():
+def test_db_path_creation_sync():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = os.path.join(tmpdir, "test_db", "tokens.db")
         wrapper = tokenator_openai(OpenAI(api_key="test"), db_path=db_path)
+        assert os.path.exists(os.path.dirname(db_path))
+
+def test_db_path_creation_async():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = os.path.join(tmpdir, "test_db", "tokens.db")
+        wrapper = tokenator_openai(AsyncOpenAI(api_key="test"), db_path=db_path)
         assert os.path.exists(os.path.dirname(db_path))
 
 @pytest.mark.asyncio
@@ -187,3 +193,60 @@ def test_malformed_response(test_sync_client):
             assert session.query(TokenUsage).count() == 0
         finally:
             session.close()
+
+@pytest.mark.asyncio
+async def test_log_usage_auto_generates_uuid(test_async_client, mock_chat_completion):
+    with patch.object(test_async_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = AsyncMock(return_value=mock_chat_completion)()
+        
+        response = await test_async_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "Hello"}]
+        )
+        
+        session = test_async_client.Session()
+        try:
+            usage = session.query(TokenUsage).first()
+            assert usage.execution_id is not None
+        finally:
+            session.close()
+
+@pytest.mark.asyncio
+async def test_custom_execution_id(test_async_client, mock_chat_completion):
+    custom_id = "test-execution-123"
+    
+    with patch.object(test_async_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = AsyncMock(return_value=mock_chat_completion)()
+        
+        response = await test_async_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "Hello"}],
+            execution_id=custom_id
+        )
+        
+        session = test_async_client.Session()
+        try:
+            usage = session.query(TokenUsage).first()
+            assert usage.execution_id == custom_id
+        finally:
+            session.close()
+
+def test_custom_execution_id_sync(test_sync_client, mock_chat_completion):
+    custom_id = "test-execution-123"
+    
+    with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = mock_chat_completion
+        
+        response = test_sync_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "Hello"}],
+            execution_id=custom_id
+        )
+        
+        session = test_sync_client.Session()
+        try:
+            usage = session.query(TokenUsage).first()
+            assert usage.execution_id == custom_id
+        finally:
+            session.close()
+

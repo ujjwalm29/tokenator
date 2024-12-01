@@ -142,3 +142,15 @@ def between(start_date: str, end_date: str, provider: str | None = None, model: 
     start = datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)  # Include the end date
     return _query_usage(start, end, provider, model)
+
+def for_execution(execution_id: str) -> TokenUsageReport:
+    """Get cost analysis for a specific execution."""
+    session = get_session()()
+    query = session.query(TokenUsage).filter(TokenUsage.execution_id == execution_id)
+    return _calculate_cost(query.all())
+
+def last_execution() -> TokenUsageReport:
+    """Get cost analysis for the last execution_id."""
+    session = get_session()()
+    query = session.query(TokenUsage).order_by(TokenUsage.created_at.desc()).first()
+    return for_execution(query.execution_id)

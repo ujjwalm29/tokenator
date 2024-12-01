@@ -28,7 +28,7 @@ class TokenUsage(Base):
     __tablename__ = "token_usage"
     
     id = Column(Integer, primary_key=True)
-    execution_id = Column(String, nullable=False, default=lambda: str(uuid.uuid4()))
+    execution_id = Column(String, nullable=False)
     provider = Column(String, nullable=False)
     model = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
