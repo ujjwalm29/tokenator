@@ -9,8 +9,11 @@ from .models import get_session, TokenUsage
 from .schemas import TokenRate, TokenUsageReport, ModelUsage, ProviderUsage
 
 import requests
+import logging
 
-def get_model_costs() -> Dict[str, TokenRate]:
+logger = logging.getLogger(__name__)
+
+def _get_model_costs() -> Dict[str, TokenRate]:
     url = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
     response = requests.get(url)
     data = response.json()
@@ -24,12 +27,14 @@ def get_model_costs() -> Dict[str, TokenRate]:
         if "input_cost_per_token" in info and "output_cost_per_token" in info
     }
 
-MODEL_COSTS = get_model_costs()
+MODEL_COSTS = _get_model_costs()
 
 def _calculate_cost(usages: list[TokenUsage], provider: str | None = None) -> TokenUsageReport:
     """Calculate cost from token usage records."""
     # Group usages by provider and model
     provider_model_usages: Dict[str, Dict[str, list[TokenUsage]]] = {}
+
+    print(f"usages: {len(usages)}")
     
     for usage in usages:
         if usage.model not in MODEL_COSTS:
@@ -115,42 +120,81 @@ def _query_usage(start_date: datetime, end_date: datetime, provider: str | None 
 
 def last_hour(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
     """Get cost analysis for the last hour."""
+    logger.debug(f"Getting cost analysis for last hour (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(hours=1)
     return _query_usage(start, end, provider, model)
 
 def last_day(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
     """Get cost analysis for the last 24 hours."""
+    logger.debug(f"Getting cost analysis for last 24 hours (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(days=1)
     return _query_usage(start, end, provider, model)
 
 def last_week(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
     """Get cost analysis for the last 7 days."""
+    logger.debug(f"Getting cost analysis for last 7 days (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(weeks=1)
     return _query_usage(start, end, provider, model)
 
 def last_month(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
     """Get cost analysis for the last 30 days."""
+    logger.debug(f"Getting cost analysis for last 30 days (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(days=30)
     return _query_usage(start, end, provider, model)
 
-def between(start_date: str, end_date: str, provider: str | None = None, model: str | None = None) -> TokenUsageReport:
-    """Get cost analysis between two dates (format: YYYY-MM-DD)."""
-    start = datetime.strptime(start_date, "%Y-%m-%d")
-    end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)  # Include the end date
+def between(
+    start_date: datetime | str,
+    end_date: datetime | str,
+    provider: str | None = None,
+    model: str | None = None
+) -> TokenUsageReport:
+    """Get cost analysis between two dates.
+    
+    Args:
+        start_date: datetime object or string (format: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+        end_date: datetime object or string (format: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+    """
+    logger.debug(f"Getting cost analysis between {start_date} and {end_date} (provider={provider}, model={model})")
+    
+    if isinstance(start_date, str):
+        try:
+            start = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+    else:
+        start = start_date
+
+    if isinstance(end_date, str):
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)  # Include the end date
+    else:
+        end = end_date
+
     return _query_usage(start, end, provider, model)
 
 def for_execution(execution_id: str) -> TokenUsageReport:
     """Get cost analysis for a specific execution."""
+    logger.debug(f"Getting cost analysis for execution_id={execution_id}")
     session = get_session()()
     query = session.query(TokenUsage).filter(TokenUsage.execution_id == execution_id)
     return _calculate_cost(query.all())
 
 def last_execution() -> TokenUsageReport:
     """Get cost analysis for the last execution_id."""
+    logger.debug("Getting cost analysis for last execution")
     session = get_session()()
     query = session.query(TokenUsage).order_by(TokenUsage.created_at.desc()).first()
+    return for_execution(query.execution_id)
+
+def all_time() -> TokenUsageReport:
+    """Get cost analysis for all time."""
+    logger.warning("Getting cost analysis for all time. This may take a while...")
+    session = get_session()()
+    query = session.query(TokenUsage).all()
     return for_execution(query.execution_id)
