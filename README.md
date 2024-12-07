@@ -13,18 +13,18 @@ pip install tokenator
 ### OpenAI Client Wrapper
 
 ```python
-from tokenator import OpenAIWrapper
+from tokenator import tokenator_openai
 from openai import OpenAI
 
 # Initialize the OpenAI client
 openai_client = OpenAI(api_key="your-api-key")
 
 # Wrap it with Tokenator
-client = OpenAIWrapper(openai_client)
+client = tokenator_openai(openai_client)
 
 # Use it exactly like the OpenAI client
 response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 ```

@@ -250,3 +250,171 @@ def test_custom_execution_id_sync(test_sync_client, mock_chat_completion):
         finally:
             session.close()
 
+@pytest.mark.asyncio
+async def test_async_streaming(test_async_client, mock_chat_completion):
+    chunks = [
+        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletion(id="2", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletion(id="3", choices=[], model="gpt-4", object="chat.completion", created=1, 
+                      usage={"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30})
+    ]
+    
+    async def async_iter():
+        for chunk in chunks:
+            yield chunk
+
+    with patch.object(test_async_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = async_iter()
+        
+        collected_chunks = []
+        stream = await test_async_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=True
+        )
+        async for chunk in stream:
+            collected_chunks.append(chunk)
+        
+        assert len(collected_chunks) == 3
+        
+        session = test_async_client.Session()
+        try:
+            usage = session.query(TokenUsage).first()
+            assert usage is not None
+            assert usage.total_tokens == 30
+        finally:
+            session.close()
+
+def test_sync_streaming(test_sync_client, mock_chat_completion):
+    chunks = [
+        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletion(id="2", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletion(id="3", choices=[], model="gpt-4", object="chat.completion", created=1, 
+                      usage={"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30})
+    ]
+    
+    with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = iter(chunks)
+        
+        collected_chunks = []
+        for chunk in test_sync_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=True
+        ):
+            collected_chunks.append(chunk)
+        
+        assert len(collected_chunks) == 3
+        
+        session = test_sync_client.Session()
+        try:
+            usage = session.query(TokenUsage).first()
+            assert usage is not None
+            assert usage.total_tokens == 30
+        finally:
+            session.close()
+
+def test_streaming_no_final_usage(test_sync_client):
+    # Test when no chunk has usage stats
+    chunks = [
+        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletion(id="2", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None)
+    ]
+    
+    with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = iter(chunks)
+        
+        collected_chunks = []
+        for chunk in test_sync_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=True
+        ):
+            collected_chunks.append(chunk)
+        
+        session = test_sync_client.Session()
+        try:
+            assert session.query(TokenUsage).count() == 0
+        finally:
+            session.close()
+
+def test_streaming_empty_response(test_sync_client):
+    # Test with empty stream
+    with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = iter([])
+        
+        collected_chunks = []
+        for chunk in test_sync_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=True
+        ):
+            collected_chunks.append(chunk)
+        
+        assert len(collected_chunks) == 0
+        
+        session = test_sync_client.Session()
+        try:
+            assert session.query(TokenUsage).count() == 0
+        finally:
+            session.close()
+
+@pytest.mark.asyncio
+async def test_streaming_with_error(test_async_client):
+    # Test handling errors during streaming
+    chunks = [
+        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+    ]
+    
+    with patch.object(test_async_client.client.chat.completions, 'create') as mock_create:
+        mock_create.side_effect = RateLimitError(
+            message="Rate limit exceeded",
+            body={},
+            response=Mock()
+        )
+        
+        with pytest.raises(RateLimitError):
+            async for chunk in await test_async_client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": "Hello"}],
+                stream=True
+            ):
+                pass
+        
+        session = test_async_client.Session()
+        try:
+            assert session.query(TokenUsage).count() == 0
+        finally:
+            session.close()
+
+def test_streaming_malformed_usage(test_sync_client):
+    # Test with malformed usage data in final chunk
+    chunks = [
+        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        {
+            "id": "2",
+            "choices": [],
+            "model": "gpt-4",
+            "object": "chat.completion",
+            "created": 1,
+            "usage": {"prompt_tokens": "invalid", "completion_tokens": None, "total_tokens": -1}
+        }
+    ]
+    
+    with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = iter(chunks)
+        
+        collected_chunks = []
+        for chunk in test_sync_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=True
+        ):
+            collected_chunks.append(chunk)
+        
+        session = test_sync_client.Session()
+        try:
+            assert session.query(TokenUsage).count() == 0
+        finally:
+            session.close()
+
