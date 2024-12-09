@@ -5,8 +5,8 @@ from typing import Dict
 
 from sqlalchemy import and_
 
-from .models import get_session, TokenUsage
-from .schemas import TokenRate, TokenUsageReport, ModelUsage, ProviderUsage
+from .schemas import get_session, TokenUsage
+from .models import TokenRate, TokenUsageReport, ModelUsage, ProviderUsage
 
 import requests
 import logging

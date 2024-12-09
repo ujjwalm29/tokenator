@@ -1,14 +1,18 @@
+from typing import AsyncIterator
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 import tempfile
 import os
 
 from tokenator.client_openai import tokenator_openai
-from tokenator.models import TokenUsage
+from tokenator.schemas import TokenUsage
 from sqlalchemy.exc import SQLAlchemyError
-from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types.completion_usage import CompletionUsage
 from openai import APIConnectionError, RateLimitError
 from openai import OpenAI, AsyncOpenAI
+from openai._streaming import AsyncStream
+import httpx
 
 @pytest.fixture
 def temp_db():
@@ -253,18 +257,31 @@ def test_custom_execution_id_sync(test_sync_client, mock_chat_completion):
 @pytest.mark.asyncio
 async def test_async_streaming(test_async_client, mock_chat_completion):
     chunks = [
-        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
-        ChatCompletion(id="2", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
-        ChatCompletion(id="3", choices=[], model="gpt-4", object="chat.completion", created=1, 
-                      usage={"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30})
+        ChatCompletionChunk(id="1", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
+        ChatCompletionChunk(id="2", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
+        ChatCompletionChunk(id="3", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, 
+                      usage=CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30))
     ]
     
-    async def async_iter():
-        for chunk in chunks:
-            yield chunk
-
     with patch.object(test_async_client.client.chat.completions, 'create') as mock_create:
-        mock_create.return_value = async_iter()
+        # Create an async iterator class for the chunks
+        class ChunkStream:
+            def __init__(self, chunks):
+                self.chunks = chunks
+                self.index = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.index >= len(self.chunks):
+                    raise StopAsyncIteration
+                chunk = self.chunks[self.index]
+                self.index += 1
+                return chunk
+
+        # Set up the mock to return our stream directly
+        mock_create.return_value = AsyncMock(return_value=ChunkStream(chunks))()
         
         collected_chunks = []
         stream = await test_async_client.chat.completions.create(
@@ -272,6 +289,7 @@ async def test_async_streaming(test_async_client, mock_chat_completion):
             messages=[{"role": "user", "content": "Hello"}],
             stream=True
         )
+        
         async for chunk in stream:
             collected_chunks.append(chunk)
         
@@ -287,10 +305,10 @@ async def test_async_streaming(test_async_client, mock_chat_completion):
 
 def test_sync_streaming(test_sync_client, mock_chat_completion):
     chunks = [
-        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
-        ChatCompletion(id="2", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
-        ChatCompletion(id="3", choices=[], model="gpt-4", object="chat.completion", created=1, 
-                      usage={"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30})
+        ChatCompletionChunk(id="1", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
+        ChatCompletionChunk(id="2", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
+        ChatCompletionChunk(id="3", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, 
+                      usage=CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30))
     ]
     
     with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
@@ -314,11 +332,42 @@ def test_sync_streaming(test_sync_client, mock_chat_completion):
         finally:
             session.close()
 
+def test_sync_streaming_with_include_usage(test_sync_client, mock_chat_completion):
+    chunks = [
+        ChatCompletionChunk(id="1", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, 
+                            usage=CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30)),
+        ChatCompletionChunk(id="2", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, 
+                            usage=CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30)),
+        ChatCompletionChunk(id="3", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, 
+                      usage=CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30))
+    ]
+    
+    with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
+        mock_create.return_value = iter(chunks)
+        
+        collected_chunks = []
+        for chunk in test_sync_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": "Hello"}],
+            stream=True
+        ):
+            collected_chunks.append(chunk)
+        
+        assert len(collected_chunks) == 3
+        
+        session = test_sync_client.Session()
+        try:
+            usage = session.query(TokenUsage).first()
+            assert usage is not None
+            assert usage.total_tokens == 90
+        finally:
+            session.close()
+
 def test_streaming_no_final_usage(test_sync_client):
     # Test when no chunk has usage stats
     chunks = [
-        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
-        ChatCompletion(id="2", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None)
+        ChatCompletionChunk(id="1", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
+        ChatCompletionChunk(id="2", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None)
     ]
     
     with patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
@@ -363,7 +412,7 @@ def test_streaming_empty_response(test_sync_client):
 async def test_streaming_with_error(test_async_client):
     # Test handling errors during streaming
     chunks = [
-        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletionChunk(id="1", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
     ]
     
     with patch.object(test_async_client.client.chat.completions, 'create') as mock_create:
@@ -390,7 +439,7 @@ async def test_streaming_with_error(test_async_client):
 def test_streaming_malformed_usage(test_sync_client):
     # Test with malformed usage data in final chunk
     chunks = [
-        ChatCompletion(id="1", choices=[], model="gpt-4", object="chat.completion", created=1, usage=None),
+        ChatCompletionChunk(id="1", choices=[], model="gpt-4", object="chat.completion.chunk", created=1, usage=None),
         {
             "id": "2",
             "choices": [],
