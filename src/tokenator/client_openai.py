@@ -1,52 +1,18 @@
 """OpenAI client wrapper with token usage tracking."""
 
-from pathlib import Path
 from typing import Any, Dict, Optional, TypeVar, Union, overload, Iterator, AsyncIterator
 import logging
 
 from openai import AsyncOpenAI, AsyncStream, OpenAI, Stream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
-from .schemas import get_session, TokenUsage
 from .models import Usage, TokenUsageStats
-import uuid
+from .base_wrapper import BaseWrapper, ResponseType
 
 logger = logging.getLogger(__name__)
 
-ResponseType = TypeVar('ResponseType', ChatCompletion, Dict[str, Any])
-
-class BaseOpenAIWrapper:
-    def __init__(self, client: Union[OpenAI, AsyncOpenAI], db_path: Optional[str] = None):
-        """Initialize the OpenAI wrapper."""
-        self.client = client
-
-        if db_path:
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-            logger.info("Created database directory at: %s", Path(db_path).parent)
-
-        self.Session = get_session(db_path)
-        
-        logger.debug("Initializing %s with db_path: %s", 
-                    self.__class__.__name__, db_path)
-
-    def _log_usage_impl(self, token_usage_stats: TokenUsageStats, session, execution_id: str) -> None:
-        """Implementation of token usage logging."""
-        logger.debug("Logging usage for model %s: %s", token_usage_stats.model, token_usage_stats.usage.model_dump())
-        try:
-            token_usage = TokenUsage(
-                execution_id=execution_id,
-                provider="openai",
-                model=token_usage_stats.model,
-                prompt_tokens=token_usage_stats.usage.prompt_tokens,
-                completion_tokens=token_usage_stats.usage.completion_tokens,
-                total_tokens=token_usage_stats.usage.total_tokens
-            )
-            session.add(token_usage)
-            logger.info("Logged token usage: model=%s, total_tokens=%d", 
-                       token_usage_stats.model, token_usage_stats.usage.total_tokens)
-        except Exception as e:
-            logger.error("Failed to log token usage: %s", str(e))
-
+class BaseOpenAIWrapper(BaseWrapper):
+    provider = "openai"
 
     def _process_response_usage(self, response: ResponseType) -> Optional[TokenUsageStats]:
         """Process and log usage statistics from a response."""
@@ -86,22 +52,6 @@ class BaseOpenAIWrapper:
     @property
     def completions(self):
         return self
-
-    def _log_usage(self, token_usage_stats: TokenUsageStats, execution_id: Optional[str] = None):
-        """Log token usage to database."""
-        if not execution_id:
-            execution_id = str(uuid.uuid4())
-
-        session = self.Session()
-        try:
-            try:
-                self._log_usage_impl(token_usage_stats, session, execution_id)
-                session.commit()
-            except Exception as e:
-                logger.error("Failed to log token usage: %s", str(e))
-                session.rollback()
-        finally:
-            session.close()
 
 class OpenAIWrapper(BaseOpenAIWrapper):
     def create(self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any) -> Union[ChatCompletion, Iterator[ChatCompletion]]:
