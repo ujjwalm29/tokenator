@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, TypeVar, Union, overload, Iterator, Asyn
 import logging
 
 from anthropic import Anthropic, AsyncAnthropic
-from anthropic.types import Message
+from anthropic.types import Message, RawMessageStartEvent, RawMessageDeltaEvent
 
 from .models import Usage, TokenUsageStats
 from .base_wrapper import BaseWrapper, ResponseType
@@ -65,16 +65,22 @@ class AnthropicWrapper(BaseAnthropicWrapper):
     
     def _wrap_streaming_response(self, response_iter: Iterator[Message], execution_id: Optional[str]) -> Iterator[Message]:
         """Wrap streaming response to capture final usage stats"""
-        chunks_with_usage = []
+        usage_data: TokenUsageStats = TokenUsageStats(model="", usage=Usage())
         for chunk in response_iter:
-            if isinstance(chunk, Message) and hasattr(chunk, 'usage'):
-                chunks_with_usage.append(chunk)
-            yield chunk
+            if isinstance(chunk, RawMessageStartEvent):
+                usage_data.model = chunk.message.model
+                usage_data.usage.prompt_tokens = chunk.message.usage.input_tokens
+                usage_data.usage.completion_tokens = chunk.message.usage.output_tokens
+                usage_data.usage.total_tokens = chunk.message.usage.input_tokens + chunk.message.usage.output_tokens
             
-        if len(chunks_with_usage) > 0:
-            usage_data = self._process_response_usage(chunks_with_usage[-1])
-            if usage_data:
-                self._log_usage(usage_data, execution_id=execution_id)
+            elif isinstance(chunk, RawMessageDeltaEvent):
+                usage_data.usage.prompt_tokens += chunk.usage.input_tokens
+                usage_data.usage.completion_tokens += chunk.usage.output_tokens
+                usage_data.usage.total_tokens += chunk.usage.input_tokens + chunk.usage.output_tokens
+            
+            yield chunk
+
+        self._log_usage(usage_data, execution_id=execution_id)
 
 class AsyncAnthropicWrapper(BaseAnthropicWrapper):
     async def create(self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any) -> Union[Message, AsyncIterator[Message]]:
@@ -93,16 +99,23 @@ class AsyncAnthropicWrapper(BaseAnthropicWrapper):
 
     async def _wrap_streaming_response(self, response_iter: AsyncIterator[Message], execution_id: Optional[str]) -> AsyncIterator[Message]:
         """Wrap streaming response to capture final usage stats"""
-        chunks_with_usage = []
+        usage_data: TokenUsageStats = TokenUsageStats(model="", usage=Usage())
         async for chunk in response_iter:
-            if isinstance(chunk, Message) and hasattr(chunk, 'usage'):
-                chunks_with_usage.append(chunk)
-            yield chunk
+            if isinstance(chunk, RawMessageStartEvent):
+                usage_data.model = chunk.message.model
+                usage_data.usage.prompt_tokens = chunk.message.usage.input_tokens
+                usage_data.usage.completion_tokens = chunk.message.usage.output_tokens
+                usage_data.usage.total_tokens = chunk.message.usage.input_tokens + chunk.message.usage.output_tokens
             
-        if len(chunks_with_usage) > 0:
-            usage_data = self._process_response_usage(chunks_with_usage[-1])
-            if usage_data:
-                self._log_usage(usage_data, execution_id=execution_id)
+            elif isinstance(chunk, RawMessageDeltaEvent):
+                usage_data.usage.prompt_tokens += chunk.usage.input_tokens
+                usage_data.usage.completion_tokens += chunk.usage.output_tokens
+                usage_data.usage.total_tokens += chunk.usage.input_tokens + chunk.usage.output_tokens
+            
+            yield chunk
+        
+            
+        self._log_usage(usage_data, execution_id=execution_id)
 
 @overload
 def tokenator_anthropic(

@@ -7,11 +7,41 @@ from tokenator.client_anthropic import tokenator_anthropic
 from tokenator.schemas import TokenUsage
 from sqlalchemy.exc import SQLAlchemyError
 from anthropic.types import (
-    Message, Usage, MessageStartEvent, MessageStopEvent,
-    ContentBlockStartEvent, ContentBlockDeltaEvent,
-    ContentBlock, TextDelta, TextBlock
+    Message, Usage, RawMessageStartEvent, RawMessageStopEvent, RawMessageDeltaEvent,
+    RawContentBlockStartEvent, RawContentBlockDeltaEvent, TextBlock, TextDelta
 )
 from anthropic import Anthropic, AsyncAnthropic, BadRequestError, RateLimitError
+
+@pytest.fixture
+def streaming_chunks():
+    return [
+        RawMessageStartEvent(
+            type="message_start",
+            message=Message(
+                id="msg_1",
+                type="message",
+                role="assistant",
+                content=[],
+                model="claude-3",
+                usage=Usage(input_tokens=10, output_tokens=20),
+                stop_reason=None,
+                stop_sequence=None
+            )
+        ),
+        RawContentBlockStartEvent(
+            type="content_block_start",
+            index=0,
+            content_block=TextBlock(type="text", text="Hello")
+        ),
+        RawContentBlockDeltaEvent(
+            type="content_block_delta",
+            index=0,
+            delta=TextDelta(type="text_delta", text=" world")
+        ),
+        RawMessageStopEvent(
+            type="message_stop"
+        )
+    ]
 
 @pytest.fixture
 def temp_db():
@@ -228,52 +258,26 @@ def test_custom_execution_id_sync(test_sync_client, mock_message):
             session.close()
 
 @pytest.mark.asyncio
-async def test_async_streaming(test_async_client):
-    chunks = [
-        MessageStartEvent(
-            type="message_start",
-            message=Message(
-                id="msg_1",
-                type="message",
-                role="assistant",
-                content=[],
-                model="claude-3",
-                usage=Usage(input_tokens=0, output_tokens=0),
-                stop_reason=None,
-                stop_sequence=None
-            )
-        ),
-        ContentBlockStartEvent(
-            type="content_block_start",
-            index=0,
-            content_block=TextBlock(type="text", text="Hello")
-        ),
-        ContentBlockDeltaEvent(
-            type="content_block_delta",
-            index=0,
-            delta=TextDelta(type="text_delta", text=" world")
-        ),
-        MessageStopEvent(
-            type="message_stop",
-            message=Message(
-                id="msg_1",
-                type="message",
-                role="assistant",
-                content=[TextBlock(type="text", text="Hello world")],
-                model="claude-3",
-                usage=Usage(input_tokens=10, output_tokens=20),
-                stop_reason="end_turn",
-                stop_sequence=None
-            )
-        )
-    ]
-    
-    async def async_iter():
-        for chunk in chunks:
-            yield chunk
+async def test_async_streaming(test_async_client, streaming_chunks):
 
     with patch.object(test_async_client.client.messages, 'create') as mock_create:
-        mock_create.return_value = async_iter()
+        class ChunkStream:
+            def __init__(self, chunks):
+                self.chunks = chunks
+                self.index = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.index >= len(self.chunks):
+                    raise StopAsyncIteration
+                chunk = self.chunks[self.index]
+                self.index += 1
+                return chunk
+
+        # Set up the mock to return our stream directly
+        mock_create.return_value = AsyncMock(return_value=ChunkStream(streaming_chunks))()
         
         collected_chunks = []
         stream = await test_async_client.messages.create(
@@ -294,48 +298,9 @@ async def test_async_streaming(test_async_client):
         finally:
             session.close()
 
-def test_sync_streaming(test_sync_client):
-    chunks = [
-        MessageStartEvent(
-            type="message_start",
-            message=Message(
-                id="msg_1",
-                type="message",
-                role="assistant",
-                content=[],
-                model="claude-3",
-                usage=Usage(input_tokens=0, output_tokens=0),
-                stop_reason=None,
-                stop_sequence=None
-            )
-        ),
-        ContentBlockStartEvent(
-            type="content_block_start",
-            index=0,
-            content_block=TextBlock(type="text", text="Hello")
-        ),
-        ContentBlockDeltaEvent(
-            type="content_block_delta",
-            index=0,
-            delta=TextDelta(type="text_delta", text=" world")
-        ),
-        MessageStopEvent(
-            type="message_stop",
-            message=Message(
-                id="msg_1",
-                type="message",
-                role="assistant",
-                content=[TextBlock(type="text", text="Hello world")],
-                model="claude-3",
-                usage=Usage(input_tokens=10, output_tokens=20),
-                stop_reason="end_turn",
-                stop_sequence=None
-            )
-        )
-    ]
-    
+def test_sync_streaming(test_sync_client, streaming_chunks):
     with patch.object(test_sync_client.client.messages, 'create') as mock_create:
-        mock_create.return_value = iter(chunks)
+        mock_create.return_value = iter(streaming_chunks)
         
         collected_chunks = []
         for chunk in test_sync_client.messages.create(
@@ -355,9 +320,9 @@ def test_sync_streaming(test_sync_client):
         finally:
             session.close()
 
-def test_streaming_no_final_usage(test_sync_client):
+def test_streaming_zero_usage(test_sync_client):
     chunks = [
-        MessageStartEvent(
+        RawMessageStartEvent(
             type="message_start",
             message=Message(
                 id="msg_1",
@@ -370,18 +335,8 @@ def test_streaming_no_final_usage(test_sync_client):
                 stop_sequence=None
             )
         ),
-        MessageStopEvent(
-            type="message_stop",
-            message=Message(
-                id="msg_1",
-                type="message",
-                role="assistant",
-                content=[TextBlock(type="text", text="Hello world")],
-                model="claude-3",
-                usage=Usage(input_tokens=0, output_tokens=0),
-                stop_reason="end_turn",
-                stop_sequence=None
-            )
+        RawMessageStopEvent(
+            type="message_stop"
         )
     ]
     
@@ -398,7 +353,9 @@ def test_streaming_no_final_usage(test_sync_client):
         
         session = test_sync_client.Session()
         try:
-            assert session.query(TokenUsage).count() == 0
+            assert session.query(TokenUsage).count() == 1
+            usage = session.query(TokenUsage).first()
+            assert usage.total_tokens == 0
         finally:
             session.close()
 
