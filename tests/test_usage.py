@@ -2,12 +2,12 @@ from datetime import datetime, timedelta
 import pytest
 from unittest.mock import patch, MagicMock
 
-from tokenator.cost import (
+from tokenator.usage import (
     last_hour, last_day, last_week, last_month, between,
     for_execution, last_execution, TokenUsageReport,
     MODEL_COSTS, TokenRate
 )
-from tokenator.models import TokenUsage
+from tokenator.schemas import TokenUsage
 
 MOCK_MODEL_COSTS = {
     "gpt-4": TokenRate(prompt=0.03, completion=0.06),
@@ -18,7 +18,7 @@ MOCK_MODEL_COSTS = {
 
 @pytest.fixture
 def mock_session():
-    with patch('tokenator.cost.get_session') as mock:
+    with patch('tokenator.usage.get_session') as mock:
         session = MagicMock()
         mock.return_value = lambda: session
         yield session
@@ -122,7 +122,7 @@ def mock_usage_data(base_time):
 
 @pytest.fixture(autouse=True)
 def mock_model_costs():
-    with patch('tokenator.cost.MODEL_COSTS', MOCK_MODEL_COSTS):
+    with patch('tokenator.usage.MODEL_COSTS', MOCK_MODEL_COSTS):
         yield
 
 def test_last_hour(mock_session, mock_usage_data, base_time):

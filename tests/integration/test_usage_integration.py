@@ -8,8 +8,8 @@ from sqlalchemy.orm import sessionmaker
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-from tokenator.models import Base, TokenUsage
-from tokenator.cost import (
+from tokenator.schemas import Base, TokenUsage
+from tokenator.usage import (
     last_hour, last_day, last_week, last_month, between,
     for_execution, last_execution, get_session
 )
@@ -25,7 +25,7 @@ def temp_db():
         Base.metadata.create_all(engine)
         
         Session = sessionmaker(bind=engine)
-        with patch('tokenator.cost.get_session', return_value=Session):
+        with patch('tokenator.usage.get_session', return_value=Session):
             yield Session
             
         Base.metadata.drop_all(engine)
