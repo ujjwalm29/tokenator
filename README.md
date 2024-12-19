@@ -1,6 +1,13 @@
-# Tokenator
+# Tokenator : Easiest way to track and analyze LLM token usage and cost
 
-Track and analyze your OpenAI API token usage and costs.
+Have you ever wondered about :
+- How many tokens does your AI agent consume? 
+- How much does it cost to do run a complex AI workflow with multiple LLM providers?
+- How much money did I spent today on development?
+
+Afraid not, tokenator is here! With tokenator's easy to use API, you can start tracking LLM usage in a matter of minutes and track your LLM usage.
+
+Get started with just 3 lines of code!
 
 ## Installation
 
@@ -10,13 +17,12 @@ pip install tokenator
 
 ## Usage
 
-### OpenAI Client Wrapper
+### OpenAI
 
 ```python
-from tokenator import tokenator_openai
 from openai import OpenAI
+from tokenator import tokenator_openai
 
-# Initialize the OpenAI client
 openai_client = OpenAI(api_key="your-api-key")
 
 # Wrap it with Tokenator
@@ -35,23 +41,31 @@ response = client.chat.completions.create(
 from tokenator import cost
 
 # Get usage for different time periods
-cost.last_hour("openai")
-cost.last_day("openai")
-cost.last_week("openai")
-cost.last_month("openai")
+cost.last_hour()
+cost.last_day()
+cost.last_week()
+cost.last_month()
 
 # Custom date range
-cost.between("2024-03-01", "2024-03-15", "openai")
+cost.between("2024-03-01", "2024-03-15")
+
+# Get usage for different LLM providers
+cost.last_day("openai")
+cost.last_day("anthropic")
+cost.last_day("google")
 ```
 
 ## Features
 
-- Drop-in replacement for OpenAI client
+- Drop-in replacement for OpenAI, Anthropic client
 - Automatic token usage tracking
 - Cost analysis for different time periods
 - SQLite storage with zero configuration
 - Thread-safe operations
 - Minimal memory footprint
+- Minimal latency footprint
+
+Most importantly, none of your data is ever sent to any server.
 
 ## License
 
