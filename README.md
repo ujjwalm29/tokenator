@@ -55,6 +55,12 @@ cost.last_day("anthropic")
 cost.last_day("google")
 ```
 
+### Example `cost` object
+
+```json
+
+```
+
 ## Features
 
 - Drop-in replacement for OpenAI, Anthropic client

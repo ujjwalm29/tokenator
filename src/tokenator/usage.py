@@ -1,7 +1,7 @@
 """Cost analysis functions for token usage."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict
+from typing import Dict, Optional, Union
 
 from sqlalchemy import and_
 
@@ -29,7 +29,7 @@ def _get_model_costs() -> Dict[str, TokenRate]:
 
 MODEL_COSTS = _get_model_costs()
 
-def _calculate_cost(usages: list[TokenUsage], provider: str | None = None) -> TokenUsageReport:
+def _calculate_cost(usages: list[TokenUsage], provider: Optional[str] = None) -> TokenUsageReport:
     """Calculate cost from token usage records."""
     # Group usages by provider and model
     provider_model_usages: Dict[str, Dict[str, list[TokenUsage]]] = {}
@@ -100,7 +100,9 @@ def _calculate_cost(usages: list[TokenUsage], provider: str | None = None) -> To
         **{k: (round(v, 6) if k == "total_cost" else v) for k, v in total_metrics.items()}
     )
 
-def _query_usage(start_date: datetime, end_date: datetime, provider: str | None = None, model: str | None = None) -> TokenUsageReport:
+def _query_usage(start_date: datetime, end_date: datetime, 
+                provider: Optional[str] = None, 
+                model: Optional[str] = None) -> TokenUsageReport:
     """Query token usage for a specific time period."""
     session = get_session()()
     try:
@@ -118,28 +120,28 @@ def _query_usage(start_date: datetime, end_date: datetime, provider: str | None 
     finally:
         session.close()
 
-def last_hour(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
+def last_hour(provider: Optional[str] = None, model: Optional[str] = None) -> TokenUsageReport:
     """Get cost analysis for the last hour."""
     logger.debug(f"Getting cost analysis for last hour (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(hours=1)
     return _query_usage(start, end, provider, model)
 
-def last_day(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
+def last_day(provider: Optional[str] = None, model: Optional[str] = None) -> TokenUsageReport:
     """Get cost analysis for the last 24 hours."""
     logger.debug(f"Getting cost analysis for last 24 hours (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(days=1)
     return _query_usage(start, end, provider, model)
 
-def last_week(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
+def last_week(provider: Optional[str] = None, model: Optional[str] = None) -> TokenUsageReport:
     """Get cost analysis for the last 7 days."""
     logger.debug(f"Getting cost analysis for last 7 days (provider={provider}, model={model})")
     end = datetime.now()
     start = end - timedelta(weeks=1)
     return _query_usage(start, end, provider, model)
 
-def last_month(provider: str | None = None, model: str | None = None) -> TokenUsageReport:
+def last_month(provider: Optional[str] = None, model: Optional[str] = None) -> TokenUsageReport:
     """Get cost analysis for the last 30 days."""
     logger.debug(f"Getting cost analysis for last 30 days (provider={provider}, model={model})")
     end = datetime.now()
@@ -147,10 +149,10 @@ def last_month(provider: str | None = None, model: str | None = None) -> TokenUs
     return _query_usage(start, end, provider, model)
 
 def between(
-    start_date: datetime | str,
-    end_date: datetime | str,
-    provider: str | None = None,
-    model: str | None = None
+    start_date: Union[datetime, str],
+    end_date: Union[datetime, str],
+    provider: Optional[str] = None,
+    model: Optional[str] = None
 ) -> TokenUsageReport:
     """Get cost analysis between two dates.
     

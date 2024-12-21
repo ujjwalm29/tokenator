@@ -1,17 +1,18 @@
 [tool.poetry]
 name = "tokenator"
 version = "0.1.0"
-description = "Token usage tracking wrapper for OpenAI API"
-authors = ["Your Name <your.email@example.com>"]
+description = "Token usage tracking wrapper for LLMs"
+authors = ["Ujjwal Maheshwari <your.email@example.com>"]
 readme = "README.md"
+license = "MIT"
 packages = [{include = "tokenator", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 openai = "^1.57.0"
 sqlalchemy = "^2.0.0"
 requests = "^2.32.3"
-alembic = "^1.14.0"
+alembic = "^1.13.0"
 anthropic = "^0.40.0"
 
 [tool.poetry.group.dev.dependencies]
