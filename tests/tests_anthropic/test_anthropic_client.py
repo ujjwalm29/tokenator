@@ -6,6 +6,7 @@ import os
 from tokenator.client_anthropic import tokenator_anthropic
 from tokenator.schemas import TokenUsage
 from sqlalchemy.exc import SQLAlchemyError
+from tokenator.migrations import check_and_run_migrations
 from anthropic.types import (
     Message, Usage, RawMessageStartEvent, RawMessageStopEvent, RawMessageDeltaEvent,
     RawContentBlockStartEvent, RawContentBlockDeltaEvent, TextBlock, TextDelta
@@ -47,6 +48,7 @@ def streaming_chunks():
 def temp_db():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = os.path.join(tmpdir, "tokens.db")
+        check_and_run_migrations(db_path=db_path)
         yield db_path
 
 @pytest.fixture

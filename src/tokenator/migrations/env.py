@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from tokenator.models import Base
+from tokenator.schemas import Base
 
 # this is the Alembic Config object
 config = context.config

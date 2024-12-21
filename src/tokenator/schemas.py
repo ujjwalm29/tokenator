@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+import os
 
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, Index
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
@@ -12,13 +13,18 @@ Base = declarative_base()
 
 def get_engine(db_path: str = None):
     """Create SQLAlchemy engine with the given database path."""
-    db_path = db_path or get_default_db_path()
+    if db_path is None:
+        try:
+            import google.colab  # type: ignore
+            db_path = '/content/tokenator.db'
+        except ImportError:
+            db_path = get_default_db_path()
     return create_engine(f"sqlite:///{db_path}", echo=False)
 
 def get_session(db_path: str = None):
     """Create a thread-safe session factory."""
     engine = get_engine(db_path)
-    Base.metadata.create_all(engine)
+    # Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
     return scoped_session(session_factory)
 

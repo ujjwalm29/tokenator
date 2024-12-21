@@ -1,40 +1,39 @@
-"""Automatic database migrations manager."""
+"""Database migration utilities for tokenator."""
 
 import os
 from pathlib import Path
-from alembic import command
 from alembic.config import Config
-from alembic.runtime.migration import MigrationContext
-from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine
-
+from alembic import command
 from .utils import get_default_db_path
 
-def get_alembic_config():
-    """Get Alembic config pointing to the package's migrations."""
-    package_dir = Path(__file__).parent
-    migrations_dir = package_dir / "migrations"
-    
-    alembic_cfg = Config()
-    alembic_cfg.set_main_option("script_location", str(migrations_dir))
-    alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{get_default_db_path()}")
-    
-    return alembic_cfg
+def get_alembic_config(db_path: str = None) -> Config:
+    """Get Alembic config for migrations."""
+    if db_path is None:
+        db_path = get_default_db_path()
 
-def check_and_run_migrations():
-    """Check if migrations are needed and run them automatically."""
-    engine = create_engine(f"sqlite:///{get_default_db_path()}")
+    # Get the directory containing this file
+    migrations_dir = Path(__file__).parent / "migrations"
     
-    # Create migrations table if it doesn't exist
-    with engine.connect() as conn:
-        context = MigrationContext.configure(conn)
-        current_rev = context.get_current_revision()
+    # Create Config object
+    config = Config()
+    config.set_main_option("script_location", str(migrations_dir))
+    config.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
     
-    # Get latest available revision
-    config = get_alembic_config()
-    script = ScriptDirectory.from_config(config)
-    head_rev = script.get_current_head()
+    return config
+
+def check_and_run_migrations(db_path: str = None):
+    """Check and run any pending database migrations."""
+    if db_path is None:
+        db_path = get_default_db_path()
+        
+    dirname = os.path.dirname(db_path)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
     
-    # Run migrations if needed
-    if current_rev != head_rev:
-        command.upgrade(config, "head") 
+    # Initialize database
+    import sqlite3
+    conn = sqlite3.connect(db_path)
+    conn.close()
+    
+    config = get_alembic_config(db_path)
+    command.upgrade(config, "head")
