@@ -48,3 +48,9 @@ def get_default_db_path() -> str:
         fallback_path = os.path.join(os.getcwd(), "tokenator_usage.db")
         logger.warning(f"Could not create default db path, falling back to {fallback_path}. Error: {e}")
         return fallback_path 
+
+__all__ = [
+    "get_default_db_path",
+    "is_colab",
+    # ... other exports ...
+]

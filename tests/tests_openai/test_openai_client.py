@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import tempfile
 import os
 
-from tokenator.client_openai import tokenator_openai
+from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
 from tokenator.migrations import check_and_run_migrations
 from sqlalchemy.exc import SQLAlchemyError
@@ -124,7 +124,7 @@ def test_missing_usage_stats(test_sync_client):
             session.close()
 
 def test_db_error_handling(test_sync_client, mock_chat_completion):
-    with patch('tokenator.client_openai.BaseOpenAIWrapper._log_usage_impl') as mock_log, \
+    with patch('tokenator.openai.client_openai.BaseOpenAIWrapper._log_usage_impl') as mock_log, \
          patch.object(test_sync_client.client.chat.completions, 'create') as mock_create:
         mock_create.return_value = mock_chat_completion
         mock_log.side_effect = SQLAlchemyError("DB Error")

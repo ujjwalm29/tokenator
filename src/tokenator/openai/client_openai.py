@@ -6,8 +6,9 @@ import logging
 from openai import AsyncOpenAI, AsyncStream, OpenAI, Stream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
-from .models import Usage, TokenUsageStats
-from .base_wrapper import BaseWrapper, ResponseType
+from ..models import Usage, TokenUsageStats
+from ..base_wrapper import BaseWrapper, ResponseType
+from .AsyncStreamInterceptor import AsyncStreamInterceptor
 
 logger = logging.getLogger(__name__)
 
@@ -87,37 +88,54 @@ class OpenAIWrapper(BaseOpenAIWrapper):
             
 
 class AsyncOpenAIWrapper(BaseOpenAIWrapper):
-    async def create(self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any) -> Union[ChatCompletion, AsyncIterator[ChatCompletion]]:
-        """Create a chat completion and log token usage."""
+    async def create(
+        self,
+        *args: Any,
+        execution_id: Optional[str] = None,
+        **kwargs: Any
+    ) -> Union[ChatCompletion, AsyncIterator[ChatCompletionChunk]]:
+        """
+        Create a chat completion and log token usage.
+        """
         logger.debug("Creating chat completion with args: %s, kwargs: %s", args, kwargs)
-        
-        if kwargs.get('stream', False):
-            response = await self.client.chat.completions.create(*args, **kwargs)
-            return self._wrap_streaming_response(response, execution_id)
-        
+
+        # If user wants a stream, return an interceptor
+        if kwargs.get("stream", False):
+            base_stream = await self.client.chat.completions.create(*args, **kwargs)
+
+            # Define a callback that will get called once the stream ends
+            def usage_callback(chunks):
+                # Mimic your old logic to gather usage from chunk.usage
+                # e.g. ChatCompletionChunk.usage
+                # Then call self._log_usage(...)
+                if not chunks:
+                    return
+                # Build usage_data from the first chunk's model
+                usage_data = TokenUsageStats(
+                    model=chunks[0].model,
+                    usage=Usage(),
+                )
+                # Sum up usage from all chunks
+                for ch in chunks:
+                    if ch.usage:
+                        usage_data.usage.prompt_tokens += ch.usage.prompt_tokens
+                        usage_data.usage.completion_tokens += ch.usage.completion_tokens
+                        usage_data.usage.total_tokens += ch.usage.total_tokens
+
+                self._log_usage(usage_data, execution_id=execution_id)
+
+            # Return the interceptor that wraps the real AsyncStream
+            return AsyncStreamInterceptor(
+                base_stream=base_stream,
+                usage_callback=usage_callback,
+            )
+
+        # Non-streaming path remains unchanged
         response = await self.client.chat.completions.create(*args, **kwargs)
         usage_data = self._process_response_usage(response)
         if usage_data:
             self._log_usage(usage_data, execution_id=execution_id)
         return response
-
-    async def _wrap_streaming_response(self, response_iter: AsyncStream[ChatCompletionChunk], execution_id: Optional[str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Wrap streaming response to capture final usage stats"""
-        chunks_with_usage = []
-        async for chunk in response_iter:
-            if isinstance(chunk, ChatCompletionChunk) and chunk.usage is not None:
-                chunks_with_usage.append(chunk)
-            yield chunk
-
-        if len(chunks_with_usage) > 0:
-            usage_data: TokenUsageStats = TokenUsageStats(model=chunks_with_usage[0].model, usage=Usage())
-            for chunk in chunks_with_usage:
-                usage_data.usage.prompt_tokens += chunk.usage.prompt_tokens
-                usage_data.usage.completion_tokens += chunk.usage.completion_tokens
-                usage_data.usage.total_tokens += chunk.usage.total_tokens
-            
-            self._log_usage(usage_data, execution_id=execution_id)
-
 @overload
 def tokenator_openai(
     client: OpenAI,

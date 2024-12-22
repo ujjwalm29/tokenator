@@ -5,7 +5,7 @@ Have you ever wondered about :
 - How much does it cost to do run a complex AI workflow with multiple LLM providers?
 - How much money did I spent today on development?
 
-Afraid not, tokenator is here! With tokenator's easy to use API, you can start tracking LLM usage in a matter of minutes and track your LLM usage.
+Afraid not, tokenator is here! With tokenator's easy to use API, you can start tracking LLM usage in a matter of minutes.
 
 Get started with just 3 lines of code!
 
@@ -58,7 +58,32 @@ cost.last_day("google")
 ### Example `cost` object
 
 ```json
+# print(cost.last_hour().model_dump_json(indent=4))
 
+usage : {
+    "total_cost": 0.0004,
+    "total_tokens": 79,
+    "prompt_tokens": 52,
+    "completion_tokens": 27,
+    "providers": [
+        {
+            "total_cost": 0.0004,
+            "total_tokens": 79,
+            "prompt_tokens": 52,
+            "completion_tokens": 27,
+            "provider": "openai",
+            "models": [
+                {
+                    "total_cost": 0.0004,
+                    "total_tokens": 79,
+                    "prompt_tokens": 52,
+                    "completion_tokens": 27,
+                    "model": "gpt-4o-2024-08-06"
+                }
+            ]
+        }
+    ]
+}
 ```
 
 ## Features
