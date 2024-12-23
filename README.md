@@ -38,28 +38,30 @@ response = client.chat.completions.create(
 ### Cost Analysis
 
 ```python
-from tokenator import cost
+from tokenator import usage
 
 # Get usage for different time periods
-cost.last_hour()
-cost.last_day()
-cost.last_week()
-cost.last_month()
+usage.last_hour()
+usage.last_day()
+usage.last_week()
+usage.last_month()
 
 # Custom date range
-cost.between("2024-03-01", "2024-03-15")
+usage.between("2024-03-01", "2024-03-15")
 
 # Get usage for different LLM providers
-cost.last_day("openai")
-cost.last_day("anthropic")
-cost.last_day("google")
+usage.last_day("openai")
+usage.last_day("anthropic")
+usage.last_day("google")
 ```
 
-### Example `cost` object
+### Example `usage` object
+
+```python
+print(cost.last_hour().model_dump_json(indent=4))
+```
 
 ```json
-# print(cost.last_hour().model_dump_json(indent=4))
-
 usage : {
     "total_cost": 0.0004,
     "total_tokens": 79,
