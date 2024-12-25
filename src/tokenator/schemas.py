@@ -12,7 +12,8 @@ Base = declarative_base()
 
 def get_engine(db_path: str = None):
     """Create SQLAlchemy engine with the given database path."""
-    db_path = get_default_db_path()
+    if db_path is None:
+        db_path = get_default_db_path()
     return create_engine(f"sqlite:///{db_path}", echo=False)
 
 
