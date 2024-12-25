@@ -1,8 +1,7 @@
 import logging
-from typing import AsyncIterator, Callable, Generic, List, Optional, TypeVar
+from typing import AsyncIterator, Callable, List, Optional, TypeVar
 
-from openai import AsyncStream, AsyncOpenAI
-from openai.types.chat import ChatCompletionChunk
+from openai import AsyncStream
 
 logger = logging.getLogger(__name__)
 

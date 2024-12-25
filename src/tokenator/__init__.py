@@ -15,4 +15,4 @@ logger = logging.getLogger(__name__)
 try:
     check_and_run_migrations()
 except Exception as e:
-    logger.warning(f"Failed to run migrations, but continuing anyway: {e}") 
+    logger.warning(f"Failed to run migrations, but continuing anyway: {e}")

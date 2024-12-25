@@ -1,1 +1,1 @@
-"""Test suite for tokenator.""" 
+"""Test suite for tokenator."""

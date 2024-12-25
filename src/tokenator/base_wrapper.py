@@ -1,16 +1,17 @@
 """Base wrapper class for token usage tracking."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar
 import logging
 import uuid
 
-from .models import Usage, TokenUsageStats
+from .models import TokenUsageStats
 from .schemas import get_session, TokenUsage
 
 logger = logging.getLogger(__name__)
 
-ResponseType = TypeVar('ResponseType')
+ResponseType = TypeVar("ResponseType")
+
 
 class BaseWrapper:
     def __init__(self, client: Any, db_path: Optional[str] = None):
@@ -22,13 +23,20 @@ class BaseWrapper:
             logger.info("Created database directory at: %s", Path(db_path).parent)
 
         self.Session = get_session(db_path)
-        
-        logger.debug("Initializing %s with db_path: %s", 
-                    self.__class__.__name__, db_path)
 
-    def _log_usage_impl(self, token_usage_stats: TokenUsageStats, session, execution_id: str) -> None:
+        logger.debug(
+            "Initializing %s with db_path: %s", self.__class__.__name__, db_path
+        )
+
+    def _log_usage_impl(
+        self, token_usage_stats: TokenUsageStats, session, execution_id: str
+    ) -> None:
         """Implementation of token usage logging."""
-        logger.debug("Logging usage for model %s: %s", token_usage_stats.model, token_usage_stats.usage.model_dump())
+        logger.debug(
+            "Logging usage for model %s: %s",
+            token_usage_stats.model,
+            token_usage_stats.usage.model_dump(),
+        )
         try:
             token_usage = TokenUsage(
                 execution_id=execution_id,
@@ -36,15 +44,20 @@ class BaseWrapper:
                 model=token_usage_stats.model,
                 prompt_tokens=token_usage_stats.usage.prompt_tokens,
                 completion_tokens=token_usage_stats.usage.completion_tokens,
-                total_tokens=token_usage_stats.usage.total_tokens
+                total_tokens=token_usage_stats.usage.total_tokens,
             )
             session.add(token_usage)
-            logger.info("Logged token usage: model=%s, total_tokens=%d", 
-                       token_usage_stats.model, token_usage_stats.usage.total_tokens)
+            logger.info(
+                "Logged token usage: model=%s, total_tokens=%d",
+                token_usage_stats.model,
+                token_usage_stats.usage.total_tokens,
+            )
         except Exception as e:
             logger.error("Failed to log token usage: %s", str(e))
 
-    def _log_usage(self, token_usage_stats: TokenUsageStats, execution_id: Optional[str] = None):
+    def _log_usage(
+        self, token_usage_stats: TokenUsageStats, execution_id: Optional[str] = None
+    ):
         """Log token usage to database."""
         if not execution_id:
             execution_id = str(uuid.uuid4())
@@ -58,4 +71,4 @@ class BaseWrapper:
                 logger.error("Failed to log token usage: %s", str(e))
                 session.rollback()
         finally:
-            session.close() 
+            session.close()
