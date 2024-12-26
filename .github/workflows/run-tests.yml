@@ -42,11 +42,11 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
 
       - name: Run tests
-        run: poetry run pytest tests
+        run: poetry run pytest
 
       - name: Generate coverage report
         if: matrix.python-version == '3.11'
         run: |
-          poetry run coverage run -m pytest tests
+          poetry run coverage run -m pytest
           poetry run coverage report
           poetry run coverage html
