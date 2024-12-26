@@ -41,10 +41,11 @@ jobs:
       - run: poetry install --no-interaction --no-root --with dev
         if: steps.cache-deps.outputs.cache-hit != 'true'
 
-      - run: poetry install --no-interaction
+      - run: poetry install --no-interaction --with dev
 
       - name: Run tests
-        run: poetry run pytest tests/
+        run: |
+          poetry run python -m pytest tests/
 
       - name: Generate coverage report
         if: matrix.python-version == '3.11'
