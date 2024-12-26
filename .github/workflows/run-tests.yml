@@ -44,11 +44,11 @@ jobs:
       - run: poetry install --no-interaction
 
       - name: Run tests
-        run: poetry run pytest
+        run: poetry run pytest tests/
 
       - name: Generate coverage report
         if: matrix.python-version == '3.11'
         run: |
-          poetry run coverage run -m pytest
+          poetry run coverage run -m pytest tests/
           poetry run coverage report
           poetry run coverage html
