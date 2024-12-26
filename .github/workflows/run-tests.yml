@@ -44,6 +44,8 @@ jobs:
       - run: poetry install --no-interaction --with dev
 
       - name: Run tests
+        env:
+          PYTHONPATH: src
         run: |
           poetry run python -m pytest tests/
 
