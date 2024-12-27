@@ -81,7 +81,7 @@ def mock_usage_data(base_time):
             prompt_tokens=300,
             completion_tokens=150,
             total_tokens=450,
-            created_at=base_time - timedelta(days=1, hours=2),
+            created_at=base_time - timedelta(days=2, hours=2),
         ),
         # This week's data
         TokenUsage(
