@@ -241,7 +241,11 @@ def test_between_date_filtering(mock_session, mock_usage_data, base_time):
                 end = datetime.strptime(case["end"], "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 # Set to 23:59:59 of the day
-                end = datetime.strptime(case["end"], "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
+                end = (
+                    datetime.strptime(case["end"], "%Y-%m-%d")
+                    + timedelta(days=1)
+                    - timedelta(seconds=1)
+                )
         else:
             end = case["end"]
 
@@ -254,7 +258,6 @@ def test_between_date_filtering(mock_session, mock_usage_data, base_time):
         assert (
             result.total_tokens == case["expected_tokens"]
         ), f"Failed for format: start={case['start']} ({type(case['start'])}), end={case['end']} ({type(case['end'])}). Expected {case['expected_tokens']}, got {result.total_tokens}"
-
 
 
 def test_between_edge_cases(mock_session, mock_usage_data, base_time):

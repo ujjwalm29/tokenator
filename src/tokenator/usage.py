@@ -219,7 +219,9 @@ def between(
         try:
             start = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-            logger.warning(f"Date-only string provided for start_date: {start_date}. Setting time to 00:00:00")
+            logger.warning(
+                f"Date-only string provided for start_date: {start_date}. Setting time to 00:00:00"
+            )
             start = datetime.strptime(start_date, "%Y-%m-%d")
 
     else:
@@ -229,8 +231,14 @@ def between(
         try:
             end = datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-            logger.warning(f"Date-only string provided for end_date: {end_date}. Setting time to 23:59:59")
-            end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
+            logger.warning(
+                f"Date-only string provided for end_date: {end_date}. Setting time to 23:59:59"
+            )
+            end = (
+                datetime.strptime(end_date, "%Y-%m-%d")
+                + timedelta(days=1)
+                - timedelta(seconds=1)
+            )
     else:
         end = end_date
 
