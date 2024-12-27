@@ -237,7 +237,7 @@ def test_between_date_filtering(mock_session, mock_usage_data, base_time):
             try:
                 start = datetime.strptime(case["start"], "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                start = datetime.strptime(case["start"], "%Y-%m-%d")
+                start = datetime.strptime(case["start"], "%Y-%m-%d")  # Sets to 00:00:00
         else:
             start = case["start"]
 
@@ -245,7 +245,8 @@ def test_between_date_filtering(mock_session, mock_usage_data, base_time):
             try:
                 end = datetime.strptime(case["end"], "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                end = datetime.strptime(case["end"], "%Y-%m-%d") + timedelta(days=1)
+                # Set to 23:59:59 of the day
+                end = datetime.strptime(case["end"], "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
         else:
             end = case["end"]
 
