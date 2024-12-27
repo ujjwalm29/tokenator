@@ -542,32 +542,3 @@ async def test_streaming_with_error(test_async_client):
             assert session.query(TokenUsage).count() == 0
         finally:
             session.close()
-
-
-def test_streaming_malformed_usage(test_sync_client):
-    # Test with malformed usage data in final chunk
-    chunks = [
-        ChatCompletionChunk(
-            id="1",
-            choices=[],
-            model="gpt-4",
-            object="chat.completion.chunk",
-            created=1,
-            usage=None,
-        ),
-        {
-            "id": "2",
-            "choices": [],
-            "model": "gpt-4",
-            "object": "chat.completion",
-            "created": 1,
-            "usage": {
-                "prompt_tokens": "invalid",
-                "completion_tokens": None,
-                "total_tokens": -1,
-            },
-        },
-    ]
-
-    # removing this test as it's not realistic
-    # openai uses it's own pydantic models for responses which will do this validation.

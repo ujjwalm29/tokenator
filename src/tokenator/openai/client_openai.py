@@ -3,7 +3,7 @@
 from typing import Any, Optional, Union, overload, Iterator, AsyncIterator
 import logging
 
-from openai import AsyncOpenAI, OpenAI, Stream
+from openai import AsyncOpenAI, OpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from ..models import Usage, TokenUsageStats
@@ -59,6 +59,7 @@ class BaseOpenAIWrapper(BaseWrapper):
 
 def _create_usage_callback(execution_id, log_usage_fn):
     """Creates a callback function for processing usage statistics from stream chunks."""
+
     def usage_callback(chunks):
         if not chunks:
             return
@@ -78,7 +79,7 @@ def _create_usage_callback(execution_id, log_usage_fn):
 
         if has_usage:
             log_usage_fn(usage_data, execution_id=execution_id)
-    
+
     return usage_callback
 
 
@@ -100,7 +101,7 @@ class OpenAIWrapper(BaseOpenAIWrapper):
         usage_data = self._process_response_usage(response)
         if usage_data:
             self._log_usage(usage_data, execution_id=execution_id)
-            
+
         return response
 
 
