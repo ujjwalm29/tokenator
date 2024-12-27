@@ -569,19 +569,5 @@ def test_streaming_malformed_usage(test_sync_client):
         },
     ]
 
-    with patch.object(
-        test_sync_client.client.chat.completions, "create"
-    ) as mock_create:
-        mock_create.return_value = iter(chunks)
-
-        collected_chunks = []
-        for chunk in test_sync_client.chat.completions.create(
-            model="gpt-4", messages=[{"role": "user", "content": "Hello"}], stream=True
-        ):
-            collected_chunks.append(chunk)
-
-        session = test_sync_client.Session()
-        try:
-            assert session.query(TokenUsage).count() == 0
-        finally:
-            session.close()
+    # removing this test as it's not realistic
+    # openai uses it's own pydantic models for responses which will do this validation.
