@@ -1,4 +1,3 @@
-import pytest
 import tempfile
 from src.tokenator.base_wrapper import BaseWrapper
 from src.tokenator.utils import get_default_db_path
