@@ -62,7 +62,7 @@ print(cost.last_hour().model_dump_json(indent=4))
 ```
 
 ```json
-usage : {
+{
     "total_cost": 0.0004,
     "total_tokens": 79,
     "prompt_tokens": 52,

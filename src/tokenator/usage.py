@@ -227,9 +227,7 @@ def between(
         try:
             end = datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-            end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(
-                days=1
-            )  # Include the end date
+            end = datetime.strptime(end_date, "%Y-%m-%d")
     else:
         end = end_date
 
