@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
-class AsyncStreamInterceptor(AsyncStream[_T]):
+class AnthropicAsyncStreamInterceptor(AsyncStream[_T]):
     """
     A wrapper around anthropic.AsyncStream that delegates all functionality
     to the 'base_stream' but intercepts each chunk to handle usage or
@@ -60,7 +60,7 @@ class AsyncStreamInterceptor(AsyncStream[_T]):
         self._chunks.append(chunk)
         return chunk
 
-    async def __aenter__(self) -> "AsyncStreamInterceptor[_T]":
+    async def __aenter__(self) -> "AnthropicAsyncStreamInterceptor[_T]":
         """Support async with ... : usage."""
         await self._base_stream.__aenter__()
         return self
@@ -77,7 +77,7 @@ class AsyncStreamInterceptor(AsyncStream[_T]):
         await self._base_stream.close()
 
 
-class SyncStreamInterceptor(Stream[_T]):
+class AnthropicSyncStreamInterceptor(Stream[_T]):
     """
     A wrapper around anthropic.Stream that delegates all functionality
     to the 'base_stream' but intercepts each chunk to handle usage or
@@ -129,7 +129,7 @@ class SyncStreamInterceptor(Stream[_T]):
         self._chunks.append(chunk)
         return chunk
 
-    def __enter__(self) -> "SyncStreamInterceptor[_T]":
+    def __enter__(self) -> "AnthropicSyncStreamInterceptor[_T]":
         """Support with ... : usage."""
         self._base_stream.__enter__()
         return self
