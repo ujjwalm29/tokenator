@@ -2,7 +2,7 @@
 
 import logging
 from .openai.client_openai import tokenator_openai
-from .client_anthropic import tokenator_anthropic
+from .anthropic.client_anthropic import tokenator_anthropic
 from . import usage
 from .utils import get_default_db_path
 from .migrations import check_and_run_migrations

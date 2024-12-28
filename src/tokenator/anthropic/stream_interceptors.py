@@ -1,16 +1,16 @@
 import logging
 from typing import AsyncIterator, Callable, List, Optional, TypeVar, Iterator
 
-from openai import AsyncStream, Stream
+from anthropic import AsyncStream, Stream
 
 logger = logging.getLogger(__name__)
 
-_T = TypeVar("_T")  # or you might specifically do _T = ChatCompletionChunk
+_T = TypeVar("_T")
 
 
 class AsyncStreamInterceptor(AsyncStream[_T]):
     """
-    A wrapper around openai.AsyncStream that delegates all functionality
+    A wrapper around anthropic.AsyncStream that delegates all functionality
     to the 'base_stream' but intercepts each chunk to handle usage or
     logging logic. This preserves .response and other methods.
 
@@ -23,7 +23,7 @@ class AsyncStreamInterceptor(AsyncStream[_T]):
         base_stream: AsyncStream[_T],
         usage_callback: Optional[Callable[[List[_T]], None]] = None,
     ):
-        # We do NOT call super().__init__() because openai.AsyncStream
+        # We do NOT call super().__init__() because anthropic.AsyncStream
         # expects constructor parameters we don't want to re-initialize.
         # Instead, we just store the base_stream and delegate everything to it.
         self._base_stream = base_stream
@@ -79,7 +79,7 @@ class AsyncStreamInterceptor(AsyncStream[_T]):
 
 class SyncStreamInterceptor(Stream[_T]):
     """
-    A wrapper around openai.Stream that delegates all functionality
+    A wrapper around anthropic.Stream that delegates all functionality
     to the 'base_stream' but intercepts each chunk to handle usage or
     logging logic. This preserves .response and other methods.
 
@@ -92,7 +92,7 @@ class SyncStreamInterceptor(Stream[_T]):
         base_stream: Stream[_T],
         usage_callback: Optional[Callable[[List[_T]], None]] = None,
     ):
-        # We do NOT call super().__init__() because openai.Stream
+        # We do NOT call super().__init__() because openai.SyncStream
         # expects constructor parameters we don't want to re-initialize.
         # Instead, we just store the base_stream and delegate everything to it.
         self._base_stream = base_stream
@@ -136,11 +136,11 @@ class SyncStreamInterceptor(Stream[_T]):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-        Ensure we propagate __exit__ to the base stream,
+        Ensure we propagate __aexit__ to the base stream,
         so connections are properly closed.
         """
         return self._base_stream.__exit__(exc_type, exc_val, exc_tb)
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Delegate close to the base_stream."""
         self._base_stream.close()

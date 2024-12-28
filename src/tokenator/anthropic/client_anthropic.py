@@ -6,8 +6,8 @@ import logging
 from anthropic import Anthropic, AsyncAnthropic
 from anthropic.types import Message, RawMessageStartEvent, RawMessageDeltaEvent
 
-from .models import Usage, TokenUsageStats
-from .base_wrapper import BaseWrapper, ResponseType
+from ..models import Usage, TokenUsageStats
+from ..base_wrapper import BaseWrapper, ResponseType
 
 logger = logging.getLogger(__name__)
 
