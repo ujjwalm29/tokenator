@@ -8,7 +8,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from ..models import Usage, TokenUsageStats
 from ..base_wrapper import BaseWrapper, ResponseType
-from .stream_interceptors import AsyncStreamInterceptor, SyncStreamInterceptor
+from .stream_interceptors import OpenAIAsyncStreamInterceptor, OpenAISyncStreamInterceptor
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class OpenAIWrapper(BaseOpenAIWrapper):
 
         if kwargs.get("stream", False):
             base_stream = self.client.chat.completions.create(*args, **kwargs)
-            return SyncStreamInterceptor(
+            return OpenAISyncStreamInterceptor(
                 base_stream=base_stream,
                 usage_callback=_create_usage_callback(execution_id, self._log_usage),
             )
@@ -117,7 +117,7 @@ class AsyncOpenAIWrapper(BaseOpenAIWrapper):
         # If user wants a stream, return an interceptor
         if kwargs.get("stream", False):
             base_stream = await self.client.chat.completions.create(*args, **kwargs)
-            return AsyncStreamInterceptor(
+            return OpenAIAsyncStreamInterceptor(
                 base_stream=base_stream,
                 usage_callback=_create_usage_callback(execution_id, self._log_usage),
             )

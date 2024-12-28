@@ -47,7 +47,7 @@ class BaseWrapper:
                 total_tokens=token_usage_stats.usage.total_tokens,
             )
             session.add(token_usage)
-            logger.info(
+            logger.debug(
                 "Logged token usage: model=%s, total_tokens=%d",
                 token_usage_stats.model,
                 token_usage_stats.usage.total_tokens,

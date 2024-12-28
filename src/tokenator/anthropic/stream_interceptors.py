@@ -1,16 +1,16 @@
 import logging
 from typing import AsyncIterator, Callable, List, Optional, TypeVar, Iterator
 
-from openai import AsyncStream, Stream
+from anthropic import AsyncStream, Stream
 
 logger = logging.getLogger(__name__)
 
-_T = TypeVar("_T")  # or you might specifically do _T = ChatCompletionChunk
+_T = TypeVar("_T")
 
 
-class OpenAIAsyncStreamInterceptor(AsyncStream[_T]):
+class AnthropicAsyncStreamInterceptor(AsyncStream[_T]):
     """
-    A wrapper around openai.AsyncStream that delegates all functionality
+    A wrapper around anthropic.AsyncStream that delegates all functionality
     to the 'base_stream' but intercepts each chunk to handle usage or
     logging logic. This preserves .response and other methods.
 
@@ -23,7 +23,7 @@ class OpenAIAsyncStreamInterceptor(AsyncStream[_T]):
         base_stream: AsyncStream[_T],
         usage_callback: Optional[Callable[[List[_T]], None]] = None,
     ):
-        # We do NOT call super().__init__() because openai.AsyncStream
+        # We do NOT call super().__init__() because anthropic.AsyncStream
         # expects constructor parameters we don't want to re-initialize.
         # Instead, we just store the base_stream and delegate everything to it.
         self._base_stream = base_stream
@@ -60,7 +60,7 @@ class OpenAIAsyncStreamInterceptor(AsyncStream[_T]):
         self._chunks.append(chunk)
         return chunk
 
-    async def __aenter__(self) -> "OpenAIAsyncStreamInterceptor[_T]":
+    async def __aenter__(self) -> "AnthropicAsyncStreamInterceptor[_T]":
         """Support async with ... : usage."""
         await self._base_stream.__aenter__()
         return self
@@ -77,9 +77,9 @@ class OpenAIAsyncStreamInterceptor(AsyncStream[_T]):
         await self._base_stream.close()
 
 
-class OpenAISyncStreamInterceptor(Stream[_T]):
+class AnthropicSyncStreamInterceptor(Stream[_T]):
     """
-    A wrapper around openai.Stream that delegates all functionality
+    A wrapper around anthropic.Stream that delegates all functionality
     to the 'base_stream' but intercepts each chunk to handle usage or
     logging logic. This preserves .response and other methods.
 
@@ -92,7 +92,7 @@ class OpenAISyncStreamInterceptor(Stream[_T]):
         base_stream: Stream[_T],
         usage_callback: Optional[Callable[[List[_T]], None]] = None,
     ):
-        # We do NOT call super().__init__() because openai.Stream
+        # We do NOT call super().__init__() because openai.SyncStream
         # expects constructor parameters we don't want to re-initialize.
         # Instead, we just store the base_stream and delegate everything to it.
         self._base_stream = base_stream
@@ -129,18 +129,18 @@ class OpenAISyncStreamInterceptor(Stream[_T]):
         self._chunks.append(chunk)
         return chunk
 
-    def __enter__(self) -> "OpenAISyncStreamInterceptor[_T]":
+    def __enter__(self) -> "AnthropicSyncStreamInterceptor[_T]":
         """Support with ... : usage."""
         self._base_stream.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-        Ensure we propagate __exit__ to the base stream,
+        Ensure we propagate __aexit__ to the base stream,
         so connections are properly closed.
         """
         return self._base_stream.__exit__(exc_type, exc_val, exc_tb)
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Delegate close to the base_stream."""
         self._base_stream.close()

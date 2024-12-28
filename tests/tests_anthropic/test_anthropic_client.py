@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import tempfile
 import os
 
-from tokenator.client_anthropic import tokenator_anthropic
+from tokenator.anthropic.client_anthropic import tokenator_anthropic
 from tokenator.schemas import TokenUsage
 from sqlalchemy.exc import SQLAlchemyError
 from tokenator.migrations import check_and_run_migrations
@@ -171,7 +171,7 @@ def test_zero_usage_stats(test_sync_client):
 def test_db_error_handling(test_sync_client, mock_message):
     with (
         patch(
-            "tokenator.client_anthropic.BaseAnthropicWrapper._log_usage_impl"
+            "tokenator.anthropic.client_anthropic.BaseAnthropicWrapper._log_usage_impl"
         ) as mock_log,
         patch.object(test_sync_client.client.messages, "create") as mock_create,
     ):
