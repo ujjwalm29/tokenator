@@ -71,7 +71,6 @@ def _create_usage_callback(execution_id, log_usage_fn):
                 usage_data.usage.prompt_tokens += chunk.message.usage.input_tokens
                 usage_data.usage.completion_tokens += chunk.message.usage.output_tokens
             elif isinstance(chunk, RawMessageDeltaEvent):
-                usage_data.usage.prompt_tokens += chunk.usage.input_tokens
                 usage_data.usage.completion_tokens += chunk.usage.output_tokens
         
         usage_data.usage.total_tokens = usage_data.usage.prompt_tokens + usage_data.usage.completion_tokens
