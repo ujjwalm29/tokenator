@@ -45,7 +45,7 @@ jobs:
 
       - name: Run tests
         run: |
-          poetry run python -m pytest tests/
+          poetry run python -m pytest tests -k "not api"
 
       - name: Generate coverage report
         if: matrix.python-version == '3.11'

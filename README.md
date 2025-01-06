@@ -1,9 +1,9 @@
-# Tokenator : Easiest way to track and analyze LLM token usage and cost
+# Tokenator : Track and analyze LLM token usage and cost
 
 Have you ever wondered about :
 - How many tokens does your AI agent consume? 
 - How much does it cost to do run a complex AI workflow with multiple LLM providers?
-- How much money did I spent today on development?
+- How much money/tokens did you spend today on developing with LLMs?
 
 Afraid not, tokenator is here! With tokenator's easy to use API, you can start tracking LLM usage in a matter of minutes.
 
@@ -34,6 +34,9 @@ response = client.chat.completions.create(
     messages=[{"role": "user", "content": "Hello!"}]
 )
 ```
+
+Works with AsyncOpenAI and `streaming=True` as well!
+Note : When streaming, don't forget to add `stream_options={"include_usage": True}` to the `create()` call!
 
 ### Cost Analysis
 
@@ -97,6 +100,56 @@ print(cost.last_hour().model_dump_json(indent=4))
 - Thread-safe operations
 - Minimal memory footprint
 - Minimal latency footprint
+
+### Anthropic
+
+```python
+from anthropic import Anthropic, AsyncAnthropic
+from tokenator import tokenator_anthropic
+
+anthropic_client = AsyncAnthropic(api_key="your-api-key")
+
+# Wrap it with Tokenator
+client = tokenator_anthropic(anthropic_client)
+
+# Use it exactly like the Anthropic client
+response = await client.messages.create(
+    model="claude-3-5-haiku-20241022",
+    messages=[{"role": "user", "content": "hello how are you"}],
+    max_tokens=20,
+)
+
+print(response)
+
+print(usage.last_execution().model_dump_json(indent=4))
+"""
+{
+    "total_cost": 0.0001,
+    "total_tokens": 23,
+    "prompt_tokens": 10,
+    "completion_tokens": 13,
+    "providers": [
+        {
+            "total_cost": 0.0001,
+            "total_tokens": 23,
+            "prompt_tokens": 10,
+            "completion_tokens": 13,
+            "provider": "anthropic",
+            "models": [
+                {
+                    "total_cost": 0.0004,
+                    "total_tokens": 79,
+                    "prompt_tokens": 52,
+                    "completion_tokens": 27,
+                    "model": "claude-3-5-haiku-20241022"
+                }
+            ]
+        }
+    ]
+}
+"""
+```
+---
 
 Most importantly, none of your data is ever sent to any server.
 
