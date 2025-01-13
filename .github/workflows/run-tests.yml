@@ -53,3 +53,7 @@ jobs:
           poetry run coverage run -m pytest tests/
           poetry run coverage report
           poetry run coverage html
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
