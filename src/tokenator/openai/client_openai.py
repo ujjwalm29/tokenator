@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 class BaseOpenAIWrapper(BaseWrapper):
-    provider = "openai"
+    def __init__(self, client, db_path=None, provider: str = "openai"):
+        super().__init__(client, db_path)
+        self.provider = provider
 
     def _process_response_usage(
         self, response: ResponseType
@@ -134,6 +136,7 @@ class AsyncOpenAIWrapper(BaseOpenAIWrapper):
 def tokenator_openai(
     client: OpenAI,
     db_path: Optional[str] = None,
+    provider: str = "openai",
 ) -> OpenAIWrapper: ...
 
 
@@ -141,23 +144,26 @@ def tokenator_openai(
 def tokenator_openai(
     client: AsyncOpenAI,
     db_path: Optional[str] = None,
+    provider: str = "openai",
 ) -> AsyncOpenAIWrapper: ...
 
 
 def tokenator_openai(
     client: Union[OpenAI, AsyncOpenAI],
     db_path: Optional[str] = None,
+    provider: str = "openai",
 ) -> Union[OpenAIWrapper, AsyncOpenAIWrapper]:
     """Create a token-tracking wrapper for an OpenAI client.
 
     Args:
         client: OpenAI or AsyncOpenAI client instance
         db_path: Optional path to SQLite database for token tracking
+        provider: Provider name, defaults to "openai"
     """
     if isinstance(client, OpenAI):
-        return OpenAIWrapper(client=client, db_path=db_path)
+        return OpenAIWrapper(client=client, db_path=db_path, provider=provider)
 
     if isinstance(client, AsyncOpenAI):
-        return AsyncOpenAIWrapper(client=client, db_path=db_path)
+        return AsyncOpenAIWrapper(client=client, db_path=db_path, provider=provider)
 
     raise ValueError("Client must be an instance of OpenAI or AsyncOpenAI")
