@@ -164,7 +164,7 @@ xai_client = OpenAI(
         )
 
 # Wrap it with Tokenator
-client = tokenator_openai(client, db_path=temp_db, provider="xai")
+client = tokenator_openai(xai_client, db_path=temp_db, provider="xai")
 
 # Use it exactly like the OpenAI client but with xAI models
 response = client.chat.completions.create(
@@ -188,17 +188,17 @@ For example, let's see how we can track usage of `perplexity` tokens.
 from openai import OpenAI
 from tokenator import tokenator_openai
 
-xai_client = OpenAI(
+perplexity_client = OpenAI(
             api_key=os.getenv("PERPLEXITY_API_KEY"),
             base_url="https://api.perplexity.ai"
         )
 
 # Wrap it with Tokenator
-client = tokenator_openai(client, db_path=temp_db, provider="perplexity")
+client = tokenator_openai(perplexity_client, db_path=temp_db, provider="perplexity")
 
-# Use it exactly like the OpenAI client but with xAI models
+# Use it exactly like the OpenAI client but with perplexity models
 response = client.chat.completions.create(
-    model="grok-2-latest",
+    model="llama-3.1-sonar-small-128k-online",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 
