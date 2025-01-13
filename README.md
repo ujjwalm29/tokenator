@@ -149,6 +149,66 @@ print(usage.last_execution().model_dump_json(indent=4))
 }
 """
 ```
+
+### xAI
+
+You can use xAI models through the `openai` SDK and track usage using `provider` parameter in `tokenator`.
+
+```python
+from openai import OpenAI
+from tokenator import tokenator_openai
+
+xai_client = OpenAI(
+            api_key=os.getenv("XAI_API_KEY"),
+            base_url="https://api.x.ai/v1"
+        )
+
+# Wrap it with Tokenator
+client = tokenator_openai(client, db_path=temp_db, provider="xai")
+
+# Use it exactly like the OpenAI client but with xAI models
+response = client.chat.completions.create(
+    model="grok-2-latest",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+print(response)
+
+print(usage.last_execution())
+```
+
+### Other AI model providers through openai SDKs
+
+Today, a variety of AI companies have made their APIs compatible to the `openai` SDK.
+You can track usage of any such AI models using `tokenator`'s `provider` parameter.
+
+For example, let's see how we can track usage of `perplexity` tokens.
+
+```python
+from openai import OpenAI
+from tokenator import tokenator_openai
+
+xai_client = OpenAI(
+            api_key=os.getenv("PERPLEXITY_API_KEY"),
+            base_url="https://api.perplexity.ai"
+        )
+
+# Wrap it with Tokenator
+client = tokenator_openai(client, db_path=temp_db, provider="perplexity")
+
+# Use it exactly like the OpenAI client but with xAI models
+response = client.chat.completions.create(
+    model="grok-2-latest",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+print(response)
+
+print(usage.last_execution())
+
+print(usage.provider("perplexity"))
+```
+
 ---
 
 Most importantly, none of your data is ever sent to any server.
