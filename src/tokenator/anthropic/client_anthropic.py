@@ -8,7 +8,11 @@ from anthropic.types import Message, RawMessageStartEvent, RawMessageDeltaEvent
 
 from ..models import Usage, TokenUsageStats
 from ..base_wrapper import BaseWrapper, ResponseType
-from .stream_interceptors import AnthropicAsyncStreamInterceptor, AnthropicSyncStreamInterceptor
+from .stream_interceptors import (
+    AnthropicAsyncStreamInterceptor,
+    AnthropicSyncStreamInterceptor,
+)
+from ..state import is_tokenator_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -56,15 +60,23 @@ class BaseAnthropicWrapper(BaseWrapper):
 
 def _create_usage_callback(execution_id, log_usage_fn):
     """Creates a callback function for processing usage statistics from stream chunks."""
+
     def usage_callback(chunks):
         if not chunks:
             return
-        
+
+        # Skip if tokenator is disabled
+        if not is_tokenator_enabled:
+            logger.debug("Tokenator is disabled - skipping stream usage logging")
+            return
+
         usage_data = TokenUsageStats(
-            model=chunks[0].message.model if isinstance(chunks[0], RawMessageStartEvent) else "",
+            model=chunks[0].message.model
+            if isinstance(chunks[0], RawMessageStartEvent)
+            else "",
             usage=Usage(),
         )
-        
+
         for chunk in chunks:
             if isinstance(chunk, RawMessageStartEvent):
                 usage_data.model = chunk.message.model
@@ -72,8 +84,10 @@ def _create_usage_callback(execution_id, log_usage_fn):
                 usage_data.usage.completion_tokens += chunk.message.usage.output_tokens
             elif isinstance(chunk, RawMessageDeltaEvent):
                 usage_data.usage.completion_tokens += chunk.usage.output_tokens
-        
-        usage_data.usage.total_tokens = usage_data.usage.prompt_tokens + usage_data.usage.completion_tokens
+
+        usage_data.usage.total_tokens = (
+            usage_data.usage.prompt_tokens + usage_data.usage.completion_tokens
+        )
         log_usage_fn(usage_data, execution_id=execution_id)
 
     return usage_callback
@@ -84,7 +98,9 @@ class AnthropicWrapper(BaseAnthropicWrapper):
         self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any
     ) -> Union[Message, Iterator[Message]]:
         """Create a message completion and log token usage."""
-        logger.debug("Creating message completion with args: %s, kwargs: %s", args, kwargs)
+        logger.debug(
+            "Creating message completion with args: %s, kwargs: %s", args, kwargs
+        )
 
         if kwargs.get("stream", False):
             base_stream = self.client.messages.create(*args, **kwargs)
@@ -105,7 +121,9 @@ class AsyncAnthropicWrapper(BaseAnthropicWrapper):
         self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any
     ) -> Union[Message, AsyncIterator[Message]]:
         """Create a message completion and log token usage."""
-        logger.debug("Creating message completion with args: %s, kwargs: %s", args, kwargs)
+        logger.debug(
+            "Creating message completion with args: %s, kwargs: %s", args, kwargs
+        )
 
         if kwargs.get("stream", False):
             base_stream = await self.client.messages.create(*args, **kwargs)

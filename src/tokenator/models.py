@@ -8,10 +8,10 @@ class TokenRate(BaseModel):
 
 
 class TokenMetrics(BaseModel):
-    total_cost: float = Field(..., description="Total cost in USD")
-    total_tokens: int = Field(..., description="Total tokens used")
-    prompt_tokens: int = Field(..., description="Number of prompt tokens")
-    completion_tokens: int = Field(..., description="Number of completion tokens")
+    total_cost: float = Field(default=0, description="Total cost in USD")
+    total_tokens: int = Field(default=0, description="Total tokens used")
+    prompt_tokens: int = Field(default=0, description="Number of prompt tokens")
+    completion_tokens: int = Field(default=0, description="Number of completion tokens")
 
 
 class ModelUsage(TokenMetrics):

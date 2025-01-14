@@ -5,7 +5,6 @@ import os
 
 from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
-from tokenator.migrations import check_and_run_migrations
 from sqlalchemy.exc import SQLAlchemyError
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.completion_usage import CompletionUsage
@@ -17,7 +16,6 @@ from openai import OpenAI, AsyncOpenAI
 def temp_db():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = os.path.join(tmpdir, "test_tokens.db")
-        check_and_run_migrations(db_path=db_path)
         yield db_path
     # Auto-cleanup when test ends
 

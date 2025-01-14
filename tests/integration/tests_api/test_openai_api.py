@@ -4,18 +4,17 @@ from openai import OpenAI, AsyncOpenAI
 from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
 import tempfile
-from tokenator.migrations import check_and_run_migrations
 
 
 @pytest.mark.skipif(
-    not os.getenv("OPENAI_API_KEY"), reason="OPENAI_API_KEY environment variable not set"
+    not os.getenv("OPENAI_API_KEY"),
+    reason="OPENAI_API_KEY environment variable not set",
 )
 class TestOpenAIAPI:
     @pytest.fixture
     def temp_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test_tokens.db")
-            check_and_run_migrations(db_path=db_path)
             yield db_path
         # Auto-cleanup when test ends
 

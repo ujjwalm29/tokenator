@@ -4,7 +4,6 @@ from openai import OpenAI, AsyncOpenAI
 from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
 import tempfile
-from tokenator.migrations import check_and_run_migrations
 
 
 @pytest.mark.skipif(
@@ -15,23 +14,20 @@ class TestOpenAIAPI:
     def temp_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test_tokens.db")
-            check_and_run_migrations(db_path=db_path)
             yield db_path
         # Auto-cleanup when test ends
 
     @pytest.fixture
     def sync_client(self, temp_db):
         client = OpenAI(
-            api_key=os.getenv("XAI_API_KEY"),
-            base_url="https://api.x.ai/v1"
+            api_key=os.getenv("XAI_API_KEY"), base_url="https://api.x.ai/v1"
         )
         return tokenator_openai(client, db_path=temp_db, provider="xai")
 
     @pytest.fixture
     def async_client(self, temp_db):
         client = AsyncOpenAI(
-            api_key=os.getenv("XAI_API_KEY"),
-            base_url="https://api.x.ai/v1"
+            api_key=os.getenv("XAI_API_KEY"), base_url="https://api.x.ai/v1"
         )
         return tokenator_openai(client, db_path=temp_db, provider="xai")
 

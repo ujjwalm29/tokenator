@@ -1,3 +1,4 @@
+import logging
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 import tempfile
@@ -6,7 +7,6 @@ import os
 from tokenator.anthropic.client_anthropic import tokenator_anthropic
 from tokenator.schemas import TokenUsage
 from sqlalchemy.exc import SQLAlchemyError
-from tokenator.migrations import check_and_run_migrations
 from anthropic.types import (
     Message,
     Usage,
@@ -18,6 +18,7 @@ from anthropic.types import (
     TextDelta,
 )
 from anthropic import Anthropic, AsyncAnthropic, BadRequestError, RateLimitError
+from tokenator import state
 
 
 @pytest.fixture
@@ -53,8 +54,8 @@ def streaming_chunks():
 @pytest.fixture
 def temp_db():
     with tempfile.TemporaryDirectory() as tmpdir:
+        logging.warning(f"temp_db: {tmpdir}")
         db_path = os.path.join(tmpdir, "tokens.db")
-        check_and_run_migrations(db_path=db_path)
         yield db_path
 
 
@@ -85,6 +86,7 @@ def test_db_path_creation_sync():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = os.path.join(tmpdir, "test_db", "tokens.db")
         _ = tokenator_anthropic(Anthropic(api_key="test"), db_path=db_path)
+        assert state.is_tokenator_enabled is True
         assert os.path.exists(os.path.dirname(db_path))
 
 
@@ -92,6 +94,7 @@ def test_db_path_creation_async():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = os.path.join(tmpdir, "test_db", "tokens.db")
         _ = tokenator_anthropic(AsyncAnthropic(api_key="test"), db_path=db_path)
+        assert state.is_tokenator_enabled is True
         assert os.path.exists(os.path.dirname(db_path))
 
 

@@ -9,7 +9,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from tokenator.schemas import Base, TokenUsage
-from tokenator.usage import last_hour, last_day
+from tokenator import usage, state
 
 
 @pytest.fixture
@@ -23,7 +23,8 @@ def temp_db():
         Base.metadata.create_all(engine)
 
         Session = sessionmaker(bind=engine)
-        with patch("tokenator.usage.get_session", return_value=Session):
+        state.db_path = db_path
+        with patch("tokenator.schemas.get_session", return_value=Session):
             yield Session
 
         Base.metadata.drop_all(engine)
@@ -62,7 +63,7 @@ def test_query_performance(db_session):
 
     # Measure query time
     start_time = datetime.now()
-    result = last_day()
+    result = usage.last_day()
     query_time = (datetime.now() - start_time).total_seconds()
 
     assert query_time < 1.0  # Query should complete in under 1 second
@@ -145,7 +146,7 @@ def test_time_boundary_precision(db_session):
         db_session.add(record)
     db_session.commit()
 
-    result = last_hour()
+    result = usage.last_hour()
     assert result.total_tokens == 300  # Should include exactly 2 records
 
 

@@ -1,25 +1,27 @@
 """SQLAlchemy models for tokenator."""
 
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Index
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 
 from .utils import get_default_db_path
+from . import state  # Import state to access db_path
 
 Base = declarative_base()
 
 
-def get_engine(db_path: str = None):
+def get_engine(db_path: Optional[str] = None):
     """Create SQLAlchemy engine with the given database path."""
     if db_path is None:
-        db_path = get_default_db_path()
+        db_path = state.db_path or get_default_db_path()  # Use state.db_path if set
     return create_engine(f"sqlite:///{db_path}", echo=False)
 
 
-def get_session(db_path: str = None):
+def get_session():
     """Create a thread-safe session factory."""
-    engine = get_engine(db_path)
+    engine = get_engine()
     # Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
     return scoped_session(session_factory)
