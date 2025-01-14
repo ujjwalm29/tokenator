@@ -19,7 +19,6 @@ class TestAnthropicDisabledAPI:
         read_only_dir.mkdir()
         os.chmod(read_only_dir, 0o444)  # Read-only
         yield str(read_only_dir / "tokenator.db")
-        state.is_tokenator_enabled = True
 
     @pytest.fixture
     def sync_client(self):

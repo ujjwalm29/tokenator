@@ -19,6 +19,7 @@ ResponseType = TypeVar("ResponseType")
 class BaseWrapper:
     def __init__(self, client: Any, db_path: Optional[str] = None):
         """Initialize the base wrapper."""
+        state.is_tokenator_enabled = True
         try:
             self.client = client
 
