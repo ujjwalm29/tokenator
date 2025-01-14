@@ -8,7 +8,11 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from ..models import Usage, TokenUsageStats
 from ..base_wrapper import BaseWrapper, ResponseType
-from .stream_interceptors import OpenAIAsyncStreamInterceptor, OpenAISyncStreamInterceptor
+from .stream_interceptors import (
+    OpenAIAsyncStreamInterceptor,
+    OpenAISyncStreamInterceptor,
+)
+from ..state import is_tokenator_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +69,12 @@ def _create_usage_callback(execution_id, log_usage_fn):
     def usage_callback(chunks):
         if not chunks:
             return
+
+        # Skip if tokenator is disabled
+        if not is_tokenator_enabled:
+            logger.debug("Tokenator is disabled - skipping stream usage logging")
+            return
+
         # Build usage_data from the first chunk's model
         usage_data = TokenUsageStats(
             model=chunks[0].model,

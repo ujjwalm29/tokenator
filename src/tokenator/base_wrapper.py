@@ -7,6 +7,9 @@ import uuid
 
 from .models import TokenUsageStats
 from .schemas import get_session, TokenUsage
+from . import state
+
+from .migrations import check_and_run_migrations
 
 logger = logging.getLogger(__name__)
 
@@ -16,17 +19,30 @@ ResponseType = TypeVar("ResponseType")
 class BaseWrapper:
     def __init__(self, client: Any, db_path: Optional[str] = None):
         """Initialize the base wrapper."""
-        self.client = client
+        state.is_tokenator_enabled = True
+        try:
+            self.client = client
 
-        if db_path:
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-            logger.info("Created database directory at: %s", Path(db_path).parent)
+            if db_path:
+                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+                logger.info("Created database directory at: %s", Path(db_path).parent)
+                state.db_path = db_path  # Store db_path in state
 
-        self.Session = get_session(db_path)
+            else:
+                state.db_path = None  # Use default path
 
-        logger.debug(
-            "Initializing %s with db_path: %s", self.__class__.__name__, db_path
-        )
+            self.Session = get_session()
+
+            logger.debug(
+                "Initializing %s with db_path: %s", self.__class__.__name__, db_path
+            )
+
+            check_and_run_migrations(db_path)
+        except Exception as e:
+            state.is_tokenator_enabled = False
+            logger.warning(
+                f"Tokenator initialization failed. Usage tracking will be disabled. Error: {e}"
+            )
 
     def _log_usage_impl(
         self, token_usage_stats: TokenUsageStats, session, execution_id: str
@@ -59,6 +75,10 @@ class BaseWrapper:
         self, token_usage_stats: TokenUsageStats, execution_id: Optional[str] = None
     ):
         """Log token usage to database."""
+        if not state.is_tokenator_enabled:
+            logger.debug("Tokenator is disabled - skipping usage logging")
+            return
+
         if not execution_id:
             execution_id = str(uuid.uuid4())
 

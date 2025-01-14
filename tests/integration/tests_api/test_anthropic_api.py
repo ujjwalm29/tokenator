@@ -4,18 +4,17 @@ from anthropic import Anthropic, AsyncAnthropic
 from tokenator.anthropic.client_anthropic import tokenator_anthropic
 from tokenator.schemas import TokenUsage
 import tempfile
-from tokenator.migrations import check_and_run_migrations
 
 
 @pytest.mark.skipif(
-    not os.getenv("ANTHROPIC_API_KEY"), reason="ANTHROPIC_API_KEY environment variable not set"
+    not os.getenv("ANTHROPIC_API_KEY"),
+    reason="ANTHROPIC_API_KEY environment variable not set",
 )
 class TestAnthropicAPI:
     @pytest.fixture
     def temp_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test_tokens.db")
-            check_and_run_migrations(db_path=db_path)
             yield db_path
 
     @pytest.fixture
@@ -39,7 +38,10 @@ class TestAnthropicAPI:
             assert usage is not None
             assert usage.prompt_tokens == response.usage.input_tokens
             assert usage.completion_tokens == response.usage.output_tokens
-            assert usage.total_tokens == response.usage.input_tokens + response.usage.output_tokens
+            assert (
+                usage.total_tokens
+                == response.usage.input_tokens + response.usage.output_tokens
+            )
         finally:
             session.close()
 
@@ -77,7 +79,10 @@ class TestAnthropicAPI:
             assert usage is not None
             assert usage.prompt_tokens == response.usage.input_tokens
             assert usage.completion_tokens == response.usage.output_tokens
-            assert usage.total_tokens == response.usage.input_tokens + response.usage.output_tokens
+            assert (
+                usage.total_tokens
+                == response.usage.input_tokens + response.usage.output_tokens
+            )
         finally:
             session.close()
 
