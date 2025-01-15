@@ -18,6 +18,8 @@ class TokenUsageService:
         if not state.is_tokenator_enabled:
             logger.info("Tokenator is disabled. Database access is unavailable.")
 
+        self.MODEL_COSTS = self._get_model_costs()
+
     def _get_model_costs(self) -> Dict[str, TokenRate]:
         if not state.is_tokenator_enabled:
             return {}
@@ -41,13 +43,12 @@ class TokenUsageService:
             logger.warning("Tokenator is disabled. Skipping cost calculation.")
             return TokenUsageReport()
 
-        MODEL_COSTS = self._get_model_costs()
-        if not MODEL_COSTS:
+        if not self.MODEL_COSTS:
             logger.warning("No model costs available.")
             return TokenUsageReport()
 
-        GPT4O_PRICING = MODEL_COSTS.get(
-            "gpt-4o", TokenRate(prompt=0.03, completion=0.06)
+        GPT4O_PRICING = self.MODEL_COSTS.get(
+            "gpt-4o", TokenRate(prompt=0.0000025, completion=0.000010)
         )
 
         # Existing calculation logic...
@@ -55,16 +56,32 @@ class TokenUsageService:
         logger.debug(f"usages: {len(usages)}")
 
         for usage in usages:
-            if usage.model not in MODEL_COSTS:
-                logger.warning(
-                    f"Model {usage.model} not found in pricing data. Using gpt-4o pricing as fallback "
-                    f"(prompt: ${GPT4O_PRICING.prompt}/token, completion: ${GPT4O_PRICING.completion}/token)"
-                )
-                MODEL_COSTS[usage.model] = GPT4O_PRICING
+            # 1st priority - direct match
+            model_key = usage.model
+            if model_key in self.MODEL_COSTS:
+                pass
+            # 2nd priority - provider/model format
+            elif f"{usage.provider}/{usage.model}" in self.MODEL_COSTS:
+                model_key = f"{usage.provider}/{usage.model}"
+            # 3rd priority - contains search
+            else:
+                matched_keys = [k for k in self.MODEL_COSTS.keys() if usage.model in k]
+                if matched_keys:
+                    model_key = matched_keys[0]
+                    logger.warning(
+                        f"Model {usage.model} matched with {model_key} in pricing data via contains search"
+                    )
+                else:
+                    # Fallback to GPT4O pricing
+                    logger.warning(
+                        f"Model {model_key} not found in pricing data. Using gpt-4o pricing as fallback "
+                        f"(prompt: ${GPT4O_PRICING.prompt}/token, completion: ${GPT4O_PRICING.completion}/token)"
+                    )
+                    self.MODEL_COSTS[model_key] = GPT4O_PRICING
 
             provider_key = usage.provider or "default"
             provider_model_usages.setdefault(provider_key, {}).setdefault(
-                usage.model, []
+                model_key, []
             ).append(usage)
 
         # Calculate totals for each level
@@ -85,10 +102,10 @@ class TokenUsageService:
             }
             models_list = []
 
-            for model, usages in model_usages.items():
+            for model_key, usages in model_usages.items():
                 model_cost = sum(
-                    usage.prompt_tokens * MODEL_COSTS[model].prompt
-                    + usage.completion_tokens * MODEL_COSTS[model].completion
+                    usage.prompt_tokens * self.MODEL_COSTS[model_key].prompt
+                    + usage.completion_tokens * self.MODEL_COSTS[model_key].completion
                     for usage in usages
                 )
                 model_total = sum(usage.total_tokens for usage in usages)
@@ -97,7 +114,7 @@ class TokenUsageService:
 
                 models_list.append(
                     ModelUsage(
-                        model=model,
+                        model=model_key,
                         total_cost=round(model_cost, 6),
                         total_tokens=model_total,
                         prompt_tokens=model_prompt,
