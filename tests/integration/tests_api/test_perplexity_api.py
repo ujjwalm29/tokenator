@@ -1,6 +1,6 @@
 import os
 import pytest
-from openai import OpenAI, AsyncOpenAI
+from openai import OpenAI
 from tokenator.models import TokenUsageReport
 from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
@@ -9,7 +9,8 @@ import tempfile
 
 
 @pytest.mark.skipif(
-    not os.getenv("PERPLEXITY_API_KEY"), reason="PERPLEXITY_API_KEY environment variable not set"
+    not os.getenv("PERPLEXITY_API_KEY"),
+    reason="PERPLEXITY_API_KEY environment variable not set",
 )
 class TestPerplexityAPI:
     @pytest.fixture
@@ -22,10 +23,10 @@ class TestPerplexityAPI:
     @pytest.fixture
     def sync_client(self, temp_db):
         client = OpenAI(
-            api_key=os.getenv("PERPLEXITY_API_KEY"), base_url="https://api.perplexity.ai"
+            api_key=os.getenv("PERPLEXITY_API_KEY"),
+            base_url="https://api.perplexity.ai",
         )
         return tokenator_openai(client, db_path=temp_db, provider="perplexity")
-
 
     def test_sync_completion_pricing(self, sync_client):
         response = sync_client.chat.completions.create(
@@ -46,11 +47,14 @@ class TestPerplexityAPI:
         finally:
             session.close()
 
-        usage_last : TokenUsageReport = usage.last_hour()
+        usage_last: TokenUsageReport = usage.last_hour()
         assert usage_last.providers[0].provider == "perplexity"
         assert usage_last.prompt_tokens == response.usage.prompt_tokens
         assert usage_last.completion_tokens == response.usage.completion_tokens
         assert usage_last.total_tokens == response.usage.total_tokens
-        
-        total_cost = usage_last.prompt_tokens * 0.000001 + usage_last.completion_tokens * 0.000001 # taken from online. Might change
+
+        total_cost = (
+            usage_last.prompt_tokens * 0.000001
+            + usage_last.completion_tokens * 0.000001
+        )  # taken from online. Might change
         assert total_cost == usage_last.total_cost
