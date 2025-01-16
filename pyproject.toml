@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tokenator"
-version = "0.1.13"
+version = "0.1.14"
 description = "Token usage tracking wrapper for LLMs"
 authors = ["Ujjwal Maheshwari <your.email@example.com>"]
 readme = "README.md"
@@ -9,11 +9,11 @@ packages = [{include = "tokenator", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-openai = "^1.57.0"
+openai = "^1.59.0"
 sqlalchemy = "^2.0.0"
 requests = "^2.32.3"
 alembic = "^1.13.0"
-anthropic = "^0.40.0"
+anthropic = "^0.43.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

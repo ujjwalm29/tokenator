@@ -53,8 +53,9 @@ class TestPerplexityAPI:
         assert usage_last.completion_tokens == response.usage.completion_tokens
         assert usage_last.total_tokens == response.usage.total_tokens
 
-        total_cost = (
+        total_cost = round(
             usage_last.prompt_tokens * 0.000001
-            + usage_last.completion_tokens * 0.000001
+            + usage_last.completion_tokens * 0.000001,
+            6
         )  # taken from online. Might change
         assert total_cost == usage_last.total_cost
