@@ -2,7 +2,9 @@ import os
 import pytest
 from anthropic import Anthropic, AsyncAnthropic
 from tokenator.anthropic.client_anthropic import tokenator_anthropic
+from tokenator.models import TokenUsageReport
 from tokenator.schemas import TokenUsage
+from tokenator import usage
 import tempfile
 
 
@@ -34,16 +36,25 @@ class TestAnthropicAPI:
 
         session = sync_client.Session()
         try:
-            usage = session.query(TokenUsage).first()
-            assert usage is not None
-            assert usage.prompt_tokens == response.usage.input_tokens
-            assert usage.completion_tokens == response.usage.output_tokens
+            usage_db = session.query(TokenUsage).first()
+            assert usage_db is not None
+            assert usage_db.prompt_tokens == response.usage.input_tokens
+            assert usage_db.completion_tokens == response.usage.output_tokens
             assert (
-                usage.total_tokens
+                usage_db.total_tokens
                 == response.usage.input_tokens + response.usage.output_tokens
             )
         finally:
             session.close()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.providers[0].provider == "anthropic"
+        assert usage_last.providers[0].prompt_tokens == response.usage.input_tokens
+        assert usage_last.providers[0].completion_tokens == response.usage.output_tokens
+        assert (
+            usage_last.providers[0].total_tokens
+            == response.usage.input_tokens + response.usage.output_tokens
+        )
 
     def test_sync_stream(self, sync_client):
         chunks = []
@@ -57,13 +68,19 @@ class TestAnthropicAPI:
 
         session = sync_client.Session()
         try:
-            usage = session.query(TokenUsage).first()
-            assert usage is not None
-            assert usage.prompt_tokens > 1
-            assert usage.completion_tokens > 1
-            assert usage.total_tokens > 1
+            usage_db = session.query(TokenUsage).first()
+            assert usage_db is not None
+            assert usage_db.prompt_tokens > 1
+            assert usage_db.completion_tokens > 1
+            assert usage_db.total_tokens > 1
         finally:
             session.close()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.providers[0].provider == "anthropic"
+        assert usage_last.providers[0].prompt_tokens > 1
+        assert usage_last.providers[0].completion_tokens > 1
+        assert usage_last.providers[0].total_tokens > 1
 
     @pytest.mark.asyncio
     async def test_async_completion(self, async_client):
@@ -75,16 +92,25 @@ class TestAnthropicAPI:
 
         session = async_client.Session()
         try:
-            usage = session.query(TokenUsage).first()
-            assert usage is not None
-            assert usage.prompt_tokens == response.usage.input_tokens
-            assert usage.completion_tokens == response.usage.output_tokens
+            usage_db = session.query(TokenUsage).first()
+            assert usage_db is not None
+            assert usage_db.prompt_tokens == response.usage.input_tokens
+            assert usage_db.completion_tokens == response.usage.output_tokens
             assert (
-                usage.total_tokens
+                usage_db.total_tokens
                 == response.usage.input_tokens + response.usage.output_tokens
             )
         finally:
             session.close()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.providers[0].provider == "anthropic"
+        assert usage_last.providers[0].prompt_tokens == response.usage.input_tokens
+        assert usage_last.providers[0].completion_tokens == response.usage.output_tokens
+        assert (
+            usage_last.providers[0].total_tokens
+            == response.usage.input_tokens + response.usage.output_tokens
+        )
 
     @pytest.mark.asyncio
     async def test_async_stream(self, async_client):
@@ -100,10 +126,16 @@ class TestAnthropicAPI:
 
         session = async_client.Session()
         try:
-            usage = session.query(TokenUsage).first()
-            assert usage is not None
-            assert usage.prompt_tokens > 1
-            assert usage.completion_tokens > 1
-            assert usage.total_tokens > 1
+            usage_db = session.query(TokenUsage).first()
+            assert usage_db is not None
+            assert usage_db.prompt_tokens > 1
+            assert usage_db.completion_tokens > 1
+            assert usage_db.total_tokens > 1
         finally:
             session.close()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.providers[0].provider == "anthropic"
+        assert usage_last.providers[0].prompt_tokens > 1
+        assert usage_last.providers[0].completion_tokens > 1
+        assert usage_last.providers[0].total_tokens > 1

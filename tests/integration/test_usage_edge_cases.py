@@ -54,6 +54,7 @@ def test_query_performance(db_session):
                 prompt_tokens=100,
                 completion_tokens=50,
                 total_tokens=150,
+                total_cost=0,
                 created_at=base_time - timedelta(minutes=i),
             )
         )
@@ -84,6 +85,7 @@ def test_concurrent_writes(temp_db):
                     prompt_tokens=100,
                     completion_tokens=50,
                     total_tokens=150,
+                    total_cost=0,
                     created_at=datetime.now(),
                 )
                 session.add(usage)
@@ -118,6 +120,7 @@ def test_time_boundary_precision(db_session):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=now - timedelta(minutes=30),
         ),
         # 1 second before hour boundary
@@ -128,6 +131,7 @@ def test_time_boundary_precision(db_session):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=now - timedelta(hours=1, seconds=-1),
         ),
         # 3 second after hour boundary
@@ -138,6 +142,7 @@ def test_time_boundary_precision(db_session):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=now - timedelta(hours=1, seconds=3),
         ),
     ]
@@ -161,6 +166,7 @@ def test_transaction_rollback(db_session):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=datetime.now(),
         )
         db_session.add(usage)
@@ -188,6 +194,7 @@ def test_index_usage(db_session):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=base_time - timedelta(days=i),
         )
         db_session.add(usage)
@@ -227,6 +234,7 @@ def test_data_persistence(temp_db):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=datetime.now(),
         )
         session1.add(usage)

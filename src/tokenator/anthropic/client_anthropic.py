@@ -6,7 +6,7 @@ import logging
 from anthropic import Anthropic, AsyncAnthropic
 from anthropic.types import Message, RawMessageStartEvent, RawMessageDeltaEvent
 
-from ..models import Usage, TokenUsageStats
+from ..models import PromptTokenDetails, TokenMetrics, TokenUsageStats
 from ..base_wrapper import BaseWrapper, ResponseType
 from .stream_interceptors import (
     AnthropicAsyncStreamInterceptor,
@@ -28,28 +28,36 @@ class BaseAnthropicWrapper(BaseWrapper):
             if isinstance(response, Message):
                 if not hasattr(response, "usage"):
                     return None
-                usage = Usage(
-                    prompt_tokens=response.usage.input_tokens,
+                usage = TokenMetrics(
+                    prompt_tokens=response.usage.input_tokens + (getattr(response.usage, 'cache_creation_input_tokens', 0) or 0),
                     completion_tokens=response.usage.output_tokens,
                     total_tokens=response.usage.input_tokens
                     + response.usage.output_tokens,
+                    prompt_tokens_details=PromptTokenDetails(
+                        cached_input_tokens=getattr(response.usage, 'cache_read_input_tokens', None),
+                        cached_creation_tokens=getattr(response.usage, 'cache_creation_input_tokens', None)
+                    )
                 )
                 return TokenUsageStats(model=response.model, usage=usage)
             elif isinstance(response, dict):
                 usage_dict = response.get("usage")
                 if not usage_dict:
                     return None
-                usage = Usage(
-                    prompt_tokens=usage_dict.get("input_tokens", 0),
+                usage = TokenMetrics(
+                    prompt_tokens=usage_dict.get("input_tokens", 0) + (getattr(usage_dict, 'cache_creation_input_tokens', 0) or 0),
                     completion_tokens=usage_dict.get("output_tokens", 0),
                     total_tokens=usage_dict.get("input_tokens", 0)
                     + usage_dict.get("output_tokens", 0),
+                    prompt_tokens_details=PromptTokenDetails(
+                        cached_input_tokens=getattr(usage_dict, 'cache_read_input_tokens', None),
+                        cached_creation_tokens=getattr(usage_dict, 'cache_creation_input_tokens', None)
+                    )
                 )
                 return TokenUsageStats(
                     model=response.get("model", "unknown"), usage=usage
                 )
         except Exception as e:
-            logger.warning("Failed to process usage stats: %s", str(e))
+            logger.warning("Failed to process usage stats: %s", str(e), exc_info=True)
             return None
         return None
 
@@ -74,7 +82,7 @@ def _create_usage_callback(execution_id, log_usage_fn):
             model=chunks[0].message.model
             if isinstance(chunks[0], RawMessageStartEvent)
             else "",
-            usage=Usage(),
+            usage=TokenMetrics(),
         )
 
         for chunk in chunks:

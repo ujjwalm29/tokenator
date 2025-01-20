@@ -4,7 +4,14 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Union
 
 from .schemas import get_session, TokenUsage
-from .models import TokenRate, TokenUsageReport, ModelUsage, ProviderUsage
+from .models import (
+    CompletionTokenDetails,
+    PromptTokenDetails,
+    TokenRate,
+    TokenUsageReport,
+    ModelUsage,
+    ProviderUsage,
+)
 from . import state
 
 import requests
@@ -27,14 +34,25 @@ class TokenUsageService:
         response = requests.get(url)
         data = response.json()
 
-        return {
-            model: TokenRate(
+        model_costs = {}
+        for model, info in data.items():
+            if (
+                "input_cost_per_token" not in info
+                or "output_cost_per_token" not in info
+            ):
+                continue
+
+            rate = TokenRate(
                 prompt=info["input_cost_per_token"],
                 completion=info["output_cost_per_token"],
+                prompt_audio=info.get("input_cost_per_audio_token"),
+                completion_audio=info.get("output_cost_per_audio_token"),
+                prompt_cached_input=info.get("cache_read_input_token_cost") or 0,
+                prompt_cached_creation=info.get("cache_read_creation_token_cost") or 0,
             )
-            for model, info in data.items()
-            if "input_cost_per_token" in info and "output_cost_per_token" in info
-        }
+            model_costs[model] = rate
+
+        return model_costs
 
     def _calculate_cost(
         self, usages: list[TokenUsage], provider: Optional[str] = None
@@ -47,23 +65,26 @@ class TokenUsageService:
             logger.warning("No model costs available.")
             return TokenUsageReport()
 
-        GPT4O_PRICING = self.MODEL_COSTS.get(
-            "gpt-4o", TokenRate(prompt=0.0000025, completion=0.000010)
+        # Default GPT4O pricing updated with provided values
+        GPT4O_PRICING = TokenRate(
+            prompt=0.0000025,
+            completion=0.000010,
+            prompt_audio=0.0001,
+            completion_audio=0.0002,
+            prompt_cached_input=0.00000125,
+            prompt_cached_creation=0.00000125,
         )
 
-        # Existing calculation logic...
         provider_model_usages: Dict[str, Dict[str, list[TokenUsage]]] = {}
         logger.debug(f"usages: {len(usages)}")
 
         for usage in usages:
-            # 1st priority - direct match
+            # Model key resolution logic (unchanged)
             model_key = usage.model
             if model_key in self.MODEL_COSTS:
                 pass
-            # 2nd priority - provider/model format
             elif f"{usage.provider}/{usage.model}" in self.MODEL_COSTS:
                 model_key = f"{usage.provider}/{usage.model}"
-            # 3rd priority - contains search
             else:
                 matched_keys = [k for k in self.MODEL_COSTS.keys() if usage.model in k]
                 if matched_keys:
@@ -72,10 +93,8 @@ class TokenUsageService:
                         f"Model {usage.model} matched with {model_key} in pricing data via contains search"
                     )
                 else:
-                    # Fallback to GPT4O pricing
                     logger.warning(
-                        f"Model {model_key} not found in pricing data. Using gpt-4o pricing as fallback "
-                        f"(prompt: ${GPT4O_PRICING.prompt}/token, completion: ${GPT4O_PRICING.completion}/token)"
+                        f"Model {model_key} not found in pricing data. Using gpt-4o pricing as fallback"
                     )
                     self.MODEL_COSTS[model_key] = GPT4O_PRICING
 
@@ -99,18 +118,85 @@ class TokenUsageService:
                 "total_tokens": 0,
                 "prompt_tokens": 0,
                 "completion_tokens": 0,
+                "prompt_cached_input_tokens": 0,
+                "prompt_cached_creation_tokens": 0,
+                "prompt_audio_tokens": 0,
+                "completion_audio_tokens": 0,
+                "completion_reasoning_tokens": 0,
+                "completion_accepted_prediction_tokens": 0,
+                "completion_rejected_prediction_tokens": 0,
             }
             models_list = []
 
             for model_key, usages in model_usages.items():
-                model_cost = sum(
-                    usage.prompt_tokens * self.MODEL_COSTS[model_key].prompt
-                    + usage.completion_tokens * self.MODEL_COSTS[model_key].completion
-                    for usage in usages
-                )
-                model_total = sum(usage.total_tokens for usage in usages)
-                model_prompt = sum(usage.prompt_tokens for usage in usages)
-                model_completion = sum(usage.completion_tokens for usage in usages)
+                model_rates = self.MODEL_COSTS[model_key]
+                model_cost = 0.0
+                model_total = 0
+                model_prompt = 0
+                model_completion = 0
+
+                for usage in usages:
+                    # Base token costs
+                    prompt_text_tokens = usage.prompt_tokens
+                    if usage.prompt_cached_input_tokens:
+                        prompt_text_tokens = usage.prompt_tokens - usage.prompt_cached_input_tokens
+                    if usage.prompt_audio_tokens:
+                        prompt_text_tokens = usage.prompt_tokens - usage.prompt_audio_tokens
+
+                    completion_text_tokens = usage.completion_tokens
+                    if usage.completion_audio_tokens:
+                        completion_text_tokens = usage.completion_tokens - usage.completion_audio_tokens
+
+                    prompt_cost = prompt_text_tokens * model_rates.prompt
+                    completion_cost = completion_text_tokens * model_rates.completion
+                    model_cost += prompt_cost + completion_cost
+
+                    # Audio token costs
+                    if usage.prompt_audio_tokens:
+                        if model_rates.prompt_audio:
+                            model_cost += (
+                                usage.prompt_audio_tokens * model_rates.prompt_audio
+                            )
+                        else:
+                            logger.warning(
+                                f"Audio prompt tokens present for {model_key} but no audio rate defined"
+                            )
+
+                    if usage.completion_audio_tokens:
+                        if model_rates.completion_audio:
+                            model_cost += (
+                                usage.completion_audio_tokens
+                                * model_rates.completion_audio
+                            )
+                        else:
+                            logger.warning(
+                                f"Audio completion tokens present for {model_key} but no audio rate defined"
+                            )
+
+                    # Cached token costs
+                    if usage.prompt_cached_input_tokens:
+                        if model_rates.prompt_cached_input:
+                            model_cost += (
+                                usage.prompt_cached_input_tokens * model_rates.prompt_cached_input
+                            )
+                        else:
+                            logger.warning(
+                                f"Cached input tokens present for {model_key} but no cache input rate defined"
+                            )
+
+                    if usage.prompt_cached_creation_tokens:
+                        if model_rates.prompt_cached_creation:
+                            model_cost += (
+                                usage.prompt_cached_creation_tokens * model_rates.prompt_cached_creation
+                            )
+                        else:
+                            logger.warning(
+                                f"Cached creation tokens present for {model_key} but no cache creation rate defined"
+                            )
+
+                    model_total += usage.total_tokens
+                    model_prompt += usage.prompt_tokens
+                    model_completion += usage.completion_tokens
 
                 models_list.append(
                     ModelUsage(
@@ -119,22 +205,118 @@ class TokenUsageService:
                         total_tokens=model_total,
                         prompt_tokens=model_prompt,
                         completion_tokens=model_completion,
+                        prompt_tokens_details=PromptTokenDetails(
+                            cached_input_tokens=sum(
+                                u.prompt_cached_input_tokens or 0 for u in usages
+                            ),
+                            cached_creation_tokens=sum(
+                                u.prompt_cached_creation_tokens or 0 for u in usages
+                            ),
+                            audio_tokens=sum(
+                                u.prompt_audio_tokens or 0 for u in usages
+                            ),
+                        )
+                        if any(
+                            u.prompt_cached_input_tokens or u.prompt_cached_creation_tokens or u.prompt_audio_tokens
+                            for u in usages
+                        )
+                        else None,
+                        completion_tokens_details=CompletionTokenDetails(
+                            audio_tokens=sum(
+                                u.completion_audio_tokens or 0 for u in usages
+                            ),
+                            reasoning_tokens=sum(
+                                u.completion_reasoning_tokens or 0 for u in usages
+                            ),
+                            accepted_prediction_tokens=sum(
+                                u.completion_accepted_prediction_tokens or 0
+                                for u in usages
+                            ),
+                            rejected_prediction_tokens=sum(
+                                u.completion_rejected_prediction_tokens or 0
+                                for u in usages
+                            ),
+                        )
+                        if any(
+                            getattr(u, attr, None)
+                            for u in usages
+                            for attr in [
+                                "completion_audio_tokens",
+                                "completion_reasoning_tokens",
+                                "completion_accepted_prediction_tokens",
+                                "completion_rejected_prediction_tokens",
+                            ]
+                        )
+                        else None,
                     )
                 )
 
+                # Update provider metrics with all token types
                 provider_metrics["total_cost"] += model_cost
                 provider_metrics["total_tokens"] += model_total
                 provider_metrics["prompt_tokens"] += model_prompt
                 provider_metrics["completion_tokens"] += model_completion
+                provider_metrics["prompt_cached_input_tokens"] += sum(
+                    u.prompt_cached_input_tokens or 0 for u in usages
+                )
+                provider_metrics["prompt_cached_creation_tokens"] += sum(
+                    u.prompt_cached_creation_tokens or 0 for u in usages
+                )
+                provider_metrics["prompt_audio_tokens"] += sum(
+                    u.prompt_audio_tokens or 0 for u in usages
+                )
+                provider_metrics["completion_audio_tokens"] += sum(
+                    u.completion_audio_tokens or 0 for u in usages
+                )
+                provider_metrics["completion_reasoning_tokens"] += sum(
+                    u.completion_reasoning_tokens or 0 for u in usages
+                )
+                provider_metrics["completion_accepted_prediction_tokens"] += sum(
+                    u.completion_accepted_prediction_tokens or 0 for u in usages
+                )
+                provider_metrics["completion_rejected_prediction_tokens"] += sum(
+                    u.completion_rejected_prediction_tokens or 0 for u in usages
+                )
 
             providers_list.append(
                 ProviderUsage(
                     provider=provider,
                     models=models_list,
-                    **{
-                        k: (round(v, 6) if k == "total_cost" else v)
-                        for k, v in provider_metrics.items()
-                    },
+                    total_cost=round(provider_metrics["total_cost"], 6),
+                    total_tokens=provider_metrics["total_tokens"],
+                    prompt_tokens=provider_metrics["prompt_tokens"],
+                    completion_tokens=provider_metrics["completion_tokens"],
+                    prompt_tokens_details=PromptTokenDetails(
+                        cached_input_tokens=provider_metrics["prompt_cached_input_tokens"],
+                        cached_creation_tokens=provider_metrics["prompt_cached_creation_tokens"],
+                        audio_tokens=provider_metrics["prompt_audio_tokens"],
+                    )
+                    if provider_metrics["prompt_cached_input_tokens"]
+                    or provider_metrics["prompt_cached_creation_tokens"]
+                    or provider_metrics["prompt_audio_tokens"]
+                    else None,
+                    completion_tokens_details=CompletionTokenDetails(
+                        audio_tokens=provider_metrics["completion_audio_tokens"],
+                        reasoning_tokens=provider_metrics[
+                            "completion_reasoning_tokens"
+                        ],
+                        accepted_prediction_tokens=provider_metrics[
+                            "completion_accepted_prediction_tokens"
+                        ],
+                        rejected_prediction_tokens=provider_metrics[
+                            "completion_rejected_prediction_tokens"
+                        ],
+                    )
+                    if any(
+                        provider_metrics[k]
+                        for k in [
+                            "completion_audio_tokens",
+                            "completion_reasoning_tokens",
+                            "completion_accepted_prediction_tokens",
+                            "completion_rejected_prediction_tokens",
+                        ]
+                    )
+                    else None,
                 )
             )
 
