@@ -115,6 +115,8 @@ def _create_usage_callback(execution_id, log_usage_fn):
             logger.debug("Tokenator is disabled - skipping stream usage logging")
             return
 
+        logger.debug("Processing stream usage for execution_id: %s", execution_id)
+
         # Build usage_data from the first chunk's model
         usage_data = TokenUsageStats(
             model=chunks[0].model,

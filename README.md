@@ -1,6 +1,6 @@
 # Tokenator : Track and analyze LLM token usage and cost
 
-Have you ever wondered about :
+Have you ever wondered :
 - How many tokens does your AI agent consume? 
 - How much does it cost to do run a complex AI workflow with multiple LLM providers?
 - How much money/tokens did you spend today on developing with LLMs?
