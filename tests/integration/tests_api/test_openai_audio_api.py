@@ -8,7 +8,7 @@ from tokenator.schemas import TokenUsage
 from tokenator import usage
 import tempfile
 import base64
-import logging
+
 
 @pytest.mark.skipif(
     not os.getenv("OPENAI_API_KEY"),
@@ -29,21 +29,18 @@ class TestOpenAIPromptCachingAPI:
     @pytest.fixture
     def async_client(self, temp_db):
         return tokenator_openai(AsyncOpenAI(), db_path=temp_db)
-    
+
     def test_sync_audio_generation(self, sync_client):
         response: ChatCompletion = sync_client.chat.completions.create(
             model="gpt-4o-audio-preview",
             modalities=["text", "audio"],
             audio={"voice": "alloy", "format": "wav"},
             messages=[
-                {
-                    "role": "user",
-                    "content": "Is a golden retriever a good family dog?"
-                }
-            ]
+                {"role": "user", "content": "Is a golden retriever a good family dog?"}
+            ],
         )
 
-        wav_bytes = base64.b64decode(response.choices[0].message.audio.data)
+        _ = base64.b64decode(response.choices[0].message.audio.data)
 
         assert sync_client.provider == "openai"
 
@@ -74,7 +71,3 @@ class TestOpenAIPromptCachingAPI:
             usage_last.providers[0].completion_tokens_details.audio_tokens
             == response.usage.completion_tokens_details.audio_tokens
         )
-        
-
-
-        

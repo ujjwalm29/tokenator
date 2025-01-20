@@ -139,13 +139,19 @@ class TokenUsageService:
                     # Base token costs
                     prompt_text_tokens = usage.prompt_tokens
                     if usage.prompt_cached_input_tokens:
-                        prompt_text_tokens = usage.prompt_tokens - usage.prompt_cached_input_tokens
+                        prompt_text_tokens = (
+                            usage.prompt_tokens - usage.prompt_cached_input_tokens
+                        )
                     if usage.prompt_audio_tokens:
-                        prompt_text_tokens = usage.prompt_tokens - usage.prompt_audio_tokens
+                        prompt_text_tokens = (
+                            usage.prompt_tokens - usage.prompt_audio_tokens
+                        )
 
                     completion_text_tokens = usage.completion_tokens
                     if usage.completion_audio_tokens:
-                        completion_text_tokens = usage.completion_tokens - usage.completion_audio_tokens
+                        completion_text_tokens = (
+                            usage.completion_tokens - usage.completion_audio_tokens
+                        )
 
                     prompt_cost = prompt_text_tokens * model_rates.prompt
                     completion_cost = completion_text_tokens * model_rates.completion
@@ -177,7 +183,8 @@ class TokenUsageService:
                     if usage.prompt_cached_input_tokens:
                         if model_rates.prompt_cached_input:
                             model_cost += (
-                                usage.prompt_cached_input_tokens * model_rates.prompt_cached_input
+                                usage.prompt_cached_input_tokens
+                                * model_rates.prompt_cached_input
                             )
                         else:
                             logger.warning(
@@ -187,7 +194,8 @@ class TokenUsageService:
                     if usage.prompt_cached_creation_tokens:
                         if model_rates.prompt_cached_creation:
                             model_cost += (
-                                usage.prompt_cached_creation_tokens * model_rates.prompt_cached_creation
+                                usage.prompt_cached_creation_tokens
+                                * model_rates.prompt_cached_creation
                             )
                         else:
                             logger.warning(
@@ -217,7 +225,9 @@ class TokenUsageService:
                             ),
                         )
                         if any(
-                            u.prompt_cached_input_tokens or u.prompt_cached_creation_tokens or u.prompt_audio_tokens
+                            u.prompt_cached_input_tokens
+                            or u.prompt_cached_creation_tokens
+                            or u.prompt_audio_tokens
                             for u in usages
                         )
                         else None,
@@ -287,8 +297,12 @@ class TokenUsageService:
                     prompt_tokens=provider_metrics["prompt_tokens"],
                     completion_tokens=provider_metrics["completion_tokens"],
                     prompt_tokens_details=PromptTokenDetails(
-                        cached_input_tokens=provider_metrics["prompt_cached_input_tokens"],
-                        cached_creation_tokens=provider_metrics["prompt_cached_creation_tokens"],
+                        cached_input_tokens=provider_metrics[
+                            "prompt_cached_input_tokens"
+                        ],
+                        cached_creation_tokens=provider_metrics[
+                            "prompt_cached_creation_tokens"
+                        ],
                         audio_tokens=provider_metrics["prompt_audio_tokens"],
                     )
                     if provider_metrics["prompt_cached_input_tokens"]

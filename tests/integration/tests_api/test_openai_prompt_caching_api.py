@@ -1,4 +1,3 @@
-import logging
 import os
 import pytest
 from openai import OpenAI, AsyncOpenAI

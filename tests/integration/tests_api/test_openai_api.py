@@ -157,6 +157,7 @@ class TestOpenAIAPI:
 
     def test_sync_completion_with_structured_output(self, sync_client):
         from pydantic import BaseModel
+
         class User(BaseModel):
             name: str
             age: int
@@ -192,6 +193,7 @@ class TestOpenAIAPI:
     @pytest.mark.asyncio
     async def test_async_completion_with_structured_output(self, async_client):
         from pydantic import BaseModel
+
         class User(BaseModel):
             name: str
             age: int

@@ -97,7 +97,7 @@ class BaseOpenAIWrapper(BaseWrapper):
     @property
     def completions(self):
         return self
-    
+
     @property
     def beta(self):
         return self
@@ -155,7 +155,7 @@ class OpenAIWrapper(BaseOpenAIWrapper):
             self._log_usage(usage_data, execution_id=execution_id)
 
         return response
-    
+
     def parse(
         self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any
     ) -> Union[ChatCompletion, Iterator[ChatCompletion]]:
@@ -200,7 +200,7 @@ class AsyncOpenAIWrapper(BaseOpenAIWrapper):
         if usage_data:
             self._log_usage(usage_data, execution_id=execution_id)
         return response
-    
+
     async def parse(
         self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any
     ) -> Union[ChatCompletion, AsyncIterator[ChatCompletionChunk]]:

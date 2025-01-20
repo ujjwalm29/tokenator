@@ -29,14 +29,19 @@ class BaseAnthropicWrapper(BaseWrapper):
                 if not hasattr(response, "usage"):
                     return None
                 usage = TokenMetrics(
-                    prompt_tokens=response.usage.input_tokens + (getattr(response.usage, 'cache_creation_input_tokens', 0) or 0),
+                    prompt_tokens=response.usage.input_tokens
+                    + (getattr(response.usage, "cache_creation_input_tokens", 0) or 0),
                     completion_tokens=response.usage.output_tokens,
                     total_tokens=response.usage.input_tokens
                     + response.usage.output_tokens,
                     prompt_tokens_details=PromptTokenDetails(
-                        cached_input_tokens=getattr(response.usage, 'cache_read_input_tokens', None),
-                        cached_creation_tokens=getattr(response.usage, 'cache_creation_input_tokens', None)
-                    )
+                        cached_input_tokens=getattr(
+                            response.usage, "cache_read_input_tokens", None
+                        ),
+                        cached_creation_tokens=getattr(
+                            response.usage, "cache_creation_input_tokens", None
+                        ),
+                    ),
                 )
                 return TokenUsageStats(model=response.model, usage=usage)
             elif isinstance(response, dict):
@@ -44,14 +49,19 @@ class BaseAnthropicWrapper(BaseWrapper):
                 if not usage_dict:
                     return None
                 usage = TokenMetrics(
-                    prompt_tokens=usage_dict.get("input_tokens", 0) + (getattr(usage_dict, 'cache_creation_input_tokens', 0) or 0),
+                    prompt_tokens=usage_dict.get("input_tokens", 0)
+                    + (getattr(usage_dict, "cache_creation_input_tokens", 0) or 0),
                     completion_tokens=usage_dict.get("output_tokens", 0),
                     total_tokens=usage_dict.get("input_tokens", 0)
                     + usage_dict.get("output_tokens", 0),
                     prompt_tokens_details=PromptTokenDetails(
-                        cached_input_tokens=getattr(usage_dict, 'cache_read_input_tokens', None),
-                        cached_creation_tokens=getattr(usage_dict, 'cache_creation_input_tokens', None)
-                    )
+                        cached_input_tokens=getattr(
+                            usage_dict, "cache_read_input_tokens", None
+                        ),
+                        cached_creation_tokens=getattr(
+                            usage_dict, "cache_creation_input_tokens", None
+                        ),
+                    ),
                 )
                 return TokenUsageStats(
                     model=response.get("model", "unknown"), usage=usage
