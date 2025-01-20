@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tokenator"
-version = "0.1.14"
+version = "0.1.15"
 description = "Token usage tracking wrapper for LLMs"
 authors = ["Ujjwal Maheshwari <your.email@example.com>"]
 readme = "README.md"
@@ -14,6 +14,7 @@ sqlalchemy = "^2.0.0"
 requests = "^2.32.3"
 alembic = "^1.13.0"
 anthropic = "^0.43.0"
+ipython = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

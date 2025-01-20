@@ -5,8 +5,21 @@ import platform
 import logging
 from pathlib import Path
 
+
 logger = logging.getLogger(__name__)
 
+def is_notebook() -> bool:
+    try:
+        from IPython import get_ipython # type: ignore
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False
 
 def is_colab() -> bool:
     """Check if running in Google Colab."""
@@ -21,7 +34,7 @@ def is_colab() -> bool:
 def get_default_db_path() -> str:
     """Get the platform-specific default database path."""
     try:
-        if is_colab():
+        if is_colab() or is_notebook():
             # Use in-memory database for Colab
             return "usage.db"
 
