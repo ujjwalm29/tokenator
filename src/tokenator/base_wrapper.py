@@ -58,9 +58,33 @@ class BaseWrapper:
                 execution_id=execution_id,
                 provider=self.provider,
                 model=token_usage_stats.model,
+                total_cost=0,  # This needs to be calculated based on your rates
                 prompt_tokens=token_usage_stats.usage.prompt_tokens,
                 completion_tokens=token_usage_stats.usage.completion_tokens,
                 total_tokens=token_usage_stats.usage.total_tokens,
+                # Prompt details
+                prompt_cached_input_tokens=token_usage_stats.usage.prompt_tokens_details.cached_input_tokens
+                if token_usage_stats.usage.prompt_tokens_details
+                else None,
+                prompt_cached_creation_tokens=token_usage_stats.usage.prompt_tokens_details.cached_creation_tokens
+                if token_usage_stats.usage.prompt_tokens_details
+                else None,
+                prompt_audio_tokens=token_usage_stats.usage.prompt_tokens_details.audio_tokens
+                if token_usage_stats.usage.prompt_tokens_details
+                else None,
+                # Completion details
+                completion_audio_tokens=token_usage_stats.usage.completion_tokens_details.audio_tokens
+                if token_usage_stats.usage.completion_tokens_details
+                else None,
+                completion_reasoning_tokens=token_usage_stats.usage.completion_tokens_details.reasoning_tokens
+                if token_usage_stats.usage.completion_tokens_details
+                else None,
+                completion_accepted_prediction_tokens=token_usage_stats.usage.completion_tokens_details.accepted_prediction_tokens
+                if token_usage_stats.usage.completion_tokens_details
+                else None,
+                completion_rejected_prediction_tokens=token_usage_stats.usage.completion_tokens_details.rejected_prediction_tokens
+                if token_usage_stats.usage.completion_tokens_details
+                else None,
             )
             session.add(token_usage)
             logger.debug(

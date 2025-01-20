@@ -40,28 +40,28 @@ class TokenUsage(Base):
     updated_at = Column(
         DateTime, nullable=False, default=datetime.now, onupdate=datetime.now
     )
+
+    # Core metrics (mandatory)
+    total_cost = Column(Integer, nullable=False)
     prompt_tokens = Column(Integer, nullable=False)
     completion_tokens = Column(Integer, nullable=False)
     total_tokens = Column(Integer, nullable=False)
 
-    # Create indexes
+    # Prompt token details (optional)
+    prompt_cached_input_tokens = Column(Integer, nullable=True)
+    prompt_cached_creation_tokens = Column(Integer, nullable=True)
+    prompt_audio_tokens = Column(Integer, nullable=True)
+
+    # Completion token details (optional)
+    completion_audio_tokens = Column(Integer, nullable=True)
+    completion_reasoning_tokens = Column(Integer, nullable=True)
+    completion_accepted_prediction_tokens = Column(Integer, nullable=True)
+    completion_rejected_prediction_tokens = Column(Integer, nullable=True)
+
+    # Keep existing indexes
     __table_args__ = (
         Index("idx_created_at", "created_at"),
         Index("idx_execution_id", "execution_id"),
         Index("idx_provider", "provider"),
         Index("idx_model", "model"),
     )
-
-    def to_dict(self):
-        """Convert model instance to dictionary."""
-        return {
-            "id": self.id,
-            "execution_id": self.execution_id,
-            "provider": self.provider,
-            "model": self.model,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-            "prompt_tokens": self.prompt_tokens,
-            "completion_tokens": self.completion_tokens,
-            "total_tokens": self.total_tokens,
-        }

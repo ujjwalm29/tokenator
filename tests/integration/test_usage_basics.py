@@ -54,6 +54,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=100,
             completion_tokens=50,
             total_tokens=150,
+            total_cost=0,
             created_at=base_time - timedelta(minutes=20),
         ),
         TokenUsage(
@@ -63,6 +64,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=200,
             completion_tokens=100,
             total_tokens=300,
+            total_cost=0,
             created_at=base_time - timedelta(minutes=45),
         ),
         # Data from a few hours ago
@@ -73,6 +75,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=150,
             completion_tokens=75,
             total_tokens=225,
+            total_cost=0,
             created_at=base_time - timedelta(hours=4),
         ),
         # Yesterday's data
@@ -83,6 +86,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=300,
             completion_tokens=150,
             total_tokens=450,
+            total_cost=0,
             created_at=base_time - timedelta(days=2, hours=2),
         ),
         # This week's data
@@ -93,6 +97,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=400,
             completion_tokens=200,
             total_tokens=600,
+            total_cost=0,
             created_at=base_time - timedelta(days=6),
         ),
         # Last week's data
@@ -103,6 +108,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=400,
             completion_tokens=200,
             total_tokens=600,
+            total_cost=0,
             created_at=base_time - timedelta(days=13),
         ),
         # Last month's data
@@ -113,6 +119,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=500,
             completion_tokens=250,
             total_tokens=750,
+            total_cost=0,
             created_at=base_time - timedelta(days=25),
         ),
         # Old data - outside month window
@@ -123,6 +130,7 @@ def usage_data(temp_db, base_time):
             prompt_tokens=1000,
             completion_tokens=500,
             total_tokens=1500,
+            total_cost=0,
             created_at=base_time - timedelta(days=45),
         ),
     ]
