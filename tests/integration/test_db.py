@@ -3,6 +3,7 @@ import os
 import sys
 import sqlite3
 from tokenator.migrations import check_and_run_migrations, get_alembic_config
+from tokenator import usage
 from alembic.script import ScriptDirectory
 
 
@@ -28,6 +29,15 @@ def mock_colab(monkeypatch):
 def colab_db_path():
     """Fixture for Colab database path."""
     return "usage.db"
+
+
+def test_usage_before_init(temp_db):
+    """Test that usage does not throw an error if used before init."""
+    last_usage = usage.last_execution()
+
+    assert last_usage is not None
+    assert last_usage.total_tokens == 0
+    assert last_usage.total_cost == 0
 
 
 def verify_migrations(db_path):

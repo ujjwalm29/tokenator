@@ -1,11 +1,12 @@
-# Tokenator : Track and analyze LLM token usage and cost
+# Tokenator : Track, analyze, compare LLM token usage and costs
 
 Have you ever wondered :
 - How many tokens does your AI agent consume? 
-- How much does it cost to do run a complex AI workflow with multiple LLM providers?
+- How much does it cost to run a complex AI workflow with multiple LLM providers?
+- Which LLM is more cost effective for my use case?
 - How much money/tokens did you spend today on developing with LLMs?
 
-Afraid not, tokenator is here! With tokenator's easy to use API, you can start tracking LLM usage in a matter of minutes.
+Afraid not, tokenator is here! With tokenator's easy to use functions, you can start tracking LLM usage in a matter of minutes.
 
 Get started with just 3 lines of code!
 
@@ -90,6 +91,10 @@ print(cost.last_hour().model_dump_json(indent=4))
     ]
 }
 ```
+
+## Cookbooks
+
+Want more code, example use cases and ideas? Check out our amazing [cookbooks](https://github.com/ujjwalm29/tokenator/tree/main/docs/cookbooks)!
 
 ## Features
 
