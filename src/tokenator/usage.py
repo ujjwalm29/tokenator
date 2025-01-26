@@ -16,6 +16,7 @@ from . import state
 
 import requests
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -561,3 +562,18 @@ class TokenUsageService:
         except Exception as e:
             logger.error(f"Unexpected error in all_time: {e}")
             return TokenUsageReport()
+
+    def wipe(self):
+        logger.warning("All your usage data is about to be wiped, are you sure you want to do this? You have 5 seconds to cancel this operation.")
+        for i in range(5, 0, -1):
+            logger.warning(str(i))
+            time.sleep(1)
+        session = get_session()()
+        try:
+            session.query(TokenUsage).delete()
+            session.commit()
+            logger.warning("All usage data has been deleted.")
+        except Exception as e:
+            logger.error(f"Error wiping data: {e}")
+        finally:
+            session.close()

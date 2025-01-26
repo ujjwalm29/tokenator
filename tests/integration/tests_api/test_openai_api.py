@@ -225,3 +225,66 @@ class TestOpenAIAPI:
             == response.usage.completion_tokens
         )
         assert usage_last.providers[0].total_tokens == response.usage.total_tokens
+
+        
+    def test_sync_completion_with_wipe(self, sync_client):
+        response = sync_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "hello how are you"}],
+        )
+
+        assert sync_client.provider == "openai"
+
+        session = sync_client.Session()
+        try:
+            usage_db = session.query(TokenUsage).first()
+            assert usage_db is not None
+            assert usage_db.provider == "openai"
+            assert usage_db.prompt_tokens == response.usage.prompt_tokens
+            assert usage_db.completion_tokens == response.usage.completion_tokens
+            assert usage_db.total_tokens == response.usage.total_tokens
+        finally:
+            session.close()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.providers[0].provider == "openai"
+        assert usage_last.providers[0].prompt_tokens == response.usage.prompt_tokens
+        assert (
+            usage_last.providers[0].completion_tokens
+            == response.usage.completion_tokens
+        )
+        assert usage_last.providers[0].total_tokens == response.usage.total_tokens
+
+        usage.wipe()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.prompt_tokens == 0
+        assert usage_last.completion_tokens == 0
+        assert usage_last.total_tokens == 0
+
+        response = sync_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "hello how are you"}],
+        )
+
+        assert sync_client.provider == "openai"
+
+        session = sync_client.Session()
+        try:
+            usage_db = session.query(TokenUsage).first()
+            assert usage_db is not None
+            assert usage_db.provider == "openai"
+            assert usage_db.prompt_tokens == response.usage.prompt_tokens
+            assert usage_db.completion_tokens == response.usage.completion_tokens
+            assert usage_db.total_tokens == response.usage.total_tokens
+        finally:
+            session.close()
+
+        usage_last: TokenUsageReport = usage.last_hour()
+        assert usage_last.providers[0].provider == "openai"
+        assert usage_last.providers[0].prompt_tokens == response.usage.prompt_tokens
+        assert (
+            usage_last.providers[0].completion_tokens
+            == response.usage.completion_tokens
+        )
+        assert usage_last.providers[0].total_tokens == response.usage.total_tokens
