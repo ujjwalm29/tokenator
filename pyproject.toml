@@ -2,7 +2,7 @@
 name = "tokenator"
 version = "0.1.16"
 description = "Token usage tracking wrapper for LLMs"
-authors = ["Ujjwal Maheshwari <your.email@example.com>"]
+authors = ["Ujjwal Maheshwari <ujjwalm29@gmail.com>"]
 readme = "README.md"
 license = "MIT"
 packages = [{include = "tokenator", from = "src"}]
@@ -21,6 +21,8 @@ pytest = "^8.0.0"
 pytest-asyncio = "^0.23.0"
 pytest-cov = "^4.1.0"
 ruff = "^0.8.4"
+langsmith = "^0.3.0"
+python-dotenv = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core"]
