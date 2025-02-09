@@ -28,7 +28,7 @@ class TokenUsageService:
                 logger.info("Tokenator is disabled. Database access is unavailable.")
             self.MODEL_COSTS = self._get_model_costs()
         except Exception as e:
-            logger.error(f"Error in __init__: {e}")
+            logger.warning(f"Error in __init__: {e}")
             self.MODEL_COSTS = {}
 
     def _get_model_costs(self) -> Dict[str, TokenRate]:
@@ -60,7 +60,7 @@ class TokenUsageService:
 
             return model_costs
         except Exception as e:
-            logger.error(f"Error in _get_model_costs: {e}")
+            logger.warning(f"Error in _get_model_costs: {e}")
             return {}
 
     def _calculate_cost(
@@ -355,7 +355,7 @@ class TokenUsageService:
                 },
             )
         except Exception as e:
-            logger.error(f"Error in _calculate_cost: {e}")
+            logger.warning(f"Error in _calculate_cost: {e}")
             return TokenUsageReport()
 
     def _query_usage(
@@ -377,7 +377,7 @@ class TokenUsageService:
                 )
 
                 if provider:
-                    query = query.filter(TokenUsage.provider == provider)
+                    query = query.filter(TokenUsage.provider.ilike(provider))
                 if model:
                     query = query.filter(TokenUsage.model == model)
 
@@ -385,12 +385,12 @@ class TokenUsageService:
 
                 return self._calculate_cost(usages, provider or "all")
             except Exception as e:
-                logger.error(f"Error querying usage: {e}")
+                logger.warning(f"Error querying usage: {e}")
                 return TokenUsageReport()
             finally:
                 session.close()
         except Exception as e:
-            logger.error(f"Unexpected error in _query_usage: {e}")
+            logger.warning(f"Unexpected error in _query_usage: {e}")
             return TokenUsageReport()
 
     def last_hour(
@@ -406,7 +406,7 @@ class TokenUsageService:
             start = end - timedelta(hours=1)
             return self._query_usage(start, end, provider, model)
         except Exception as e:
-            logger.error(f"Error in last_hour: {e}")
+            logger.warning(f"Error in last_hour: {e}")
             return TokenUsageReport()
 
     def last_day(
@@ -422,7 +422,7 @@ class TokenUsageService:
             start = end - timedelta(days=1)
             return self._query_usage(start, end, provider, model)
         except Exception as e:
-            logger.error(f"Error in last_day: {e}")
+            logger.warning(f"Error in last_day: {e}")
             return TokenUsageReport()
 
     def last_week(
@@ -438,7 +438,7 @@ class TokenUsageService:
             start = end - timedelta(weeks=1)
             return self._query_usage(start, end, provider, model)
         except Exception as e:
-            logger.error(f"Error in last_week: {e}")
+            logger.warning(f"Error in last_week: {e}")
             return TokenUsageReport()
 
     def last_month(
@@ -454,7 +454,7 @@ class TokenUsageService:
             start = end - timedelta(days=30)
             return self._query_usage(start, end, provider, model)
         except Exception as e:
-            logger.error(f"Error in last_month: {e}")
+            logger.warning(f"Error in last_month: {e}")
             return TokenUsageReport()
 
     def between(
@@ -499,7 +499,7 @@ class TokenUsageService:
 
             return self._query_usage(start, end, provider, model)
         except Exception as e:
-            logger.error(f"Error in between: {e}")
+            logger.warning(f"Error in between: {e}")
             return TokenUsageReport()
 
     def for_execution(self, execution_id: str) -> TokenUsageReport:
@@ -514,12 +514,12 @@ class TokenUsageService:
                 )
                 return self._calculate_cost(query.all())
             except Exception as e:
-                logger.error(f"Error querying for_execution: {e}")
+                logger.warning(f"Error querying for_execution: {e}")
                 return TokenUsageReport()
             finally:
                 session.close()
         except Exception as e:
-            logger.error(f"Unexpected error in for_execution: {e}")
+            logger.warning(f"Unexpected error in for_execution: {e}")
             return TokenUsageReport()
 
     def last_execution(self) -> TokenUsageReport:
@@ -536,12 +536,12 @@ class TokenUsageService:
                     return self.for_execution(query.execution_id)
                 return TokenUsageReport()
             except Exception as e:
-                logger.error(f"Error querying last_execution: {e}")
+                logger.warning(f"Error querying last_execution: {e}")
                 return TokenUsageReport()
             finally:
                 session.close()
         except Exception as e:
-            logger.error(f"Unexpected error in last_execution: {e}")
+            logger.warning(f"Unexpected error in last_execution: {e}")
             return TokenUsageReport()
 
     def all_time(self) -> TokenUsageReport:
@@ -555,12 +555,12 @@ class TokenUsageService:
                 query = session.query(TokenUsage)
                 return self._calculate_cost(query.all())
             except Exception as e:
-                logger.error(f"Error querying all_time usage: {e}")
+                logger.warning(f"Error querying all_time usage: {e}")
                 return TokenUsageReport()
             finally:
                 session.close()
         except Exception as e:
-            logger.error(f"Unexpected error in all_time: {e}")
+            logger.warning(f"Unexpected error in all_time: {e}")
             return TokenUsageReport()
 
     def wipe(self):
@@ -574,6 +574,6 @@ class TokenUsageService:
             session.commit()
             logger.warning("All usage data has been deleted.")
         except Exception as e:
-            logger.error(f"Error wiping data: {e}")
+            logger.warning(f"Error wiping data: {e}")
         finally:
             session.close()

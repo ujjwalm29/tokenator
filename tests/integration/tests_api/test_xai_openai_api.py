@@ -4,7 +4,9 @@ from openai import OpenAI, AsyncOpenAI
 from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
 import tempfile
+from dotenv import load_dotenv
 
+load_dotenv()
 
 @pytest.mark.skipif(
     not os.getenv("XAI_API_KEY"), reason="XAI_API_KEY environment variable not set"

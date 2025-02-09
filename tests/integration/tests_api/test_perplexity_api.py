@@ -6,7 +6,9 @@ from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
 from tokenator import usage
 import tempfile
+from dotenv import load_dotenv
 
+load_dotenv()
 
 @pytest.mark.skipif(
     not os.getenv("PERPLEXITY_API_KEY"),
