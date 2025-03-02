@@ -9,6 +9,12 @@ from .utils import get_default_db_path
 from .usage import TokenUsageService
 
 usage = TokenUsageService()  # noqa: F811
-__all__ = ["tokenator_openai", "tokenator_anthropic", "tokenator_gemini", "usage", "get_default_db_path"]
+__all__ = [
+    "tokenator_openai",
+    "tokenator_anthropic",
+    "tokenator_gemini",
+    "usage",
+    "get_default_db_path",
+]
 
 logger = logging.getLogger(__name__)

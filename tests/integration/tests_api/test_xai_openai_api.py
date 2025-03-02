@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @pytest.mark.skipif(
     not os.getenv("XAI_API_KEY"), reason="XAI_API_KEY environment variable not set"
 )

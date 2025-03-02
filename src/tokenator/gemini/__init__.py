@@ -2,4 +2,4 @@
 
 from .client_gemini import tokenator_gemini
 
-__all__ = ["tokenator_gemini"] 
+__all__ = ["tokenator_gemini"]

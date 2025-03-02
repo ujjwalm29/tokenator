@@ -30,7 +30,7 @@ class TestGeminiAPI:
         return tokenator_gemini(client, db_path=temp_db)
 
     def test_sync_completion(self, sync_client):
-        response = sync_client.models.generate_content(
+        _ = sync_client.models.generate_content(
             model="gemini-2.0-flash",
             contents="hello how are you",
         )
@@ -69,8 +69,8 @@ class TestGeminiAPI:
             chunks.append(chunk)
 
         count_response = sync_client.models.count_tokens(
-            model='gemini-2.0-flash-001',
-            contents='hello how are you',
+            model="gemini-2.0-flash-001",
+            contents="hello how are you",
         )
 
         assert sync_client.provider == "gemini"
@@ -87,15 +87,18 @@ class TestGeminiAPI:
             session.close()
 
         usage_last: TokenUsageReport = usage.last_hour()
-        
+
         assert usage_last.providers[0].provider == "gemini"
-        assert abs(usage_last.providers[0].prompt_tokens - count_response.total_tokens) <= 1
+        assert (
+            abs(usage_last.providers[0].prompt_tokens - count_response.total_tokens)
+            <= 1
+        )
         assert usage_last.providers[0].completion_tokens > 0
         assert usage_last.providers[0].total_tokens > 0
 
     @pytest.mark.asyncio
     async def test_async_completion(self, sync_client):
-        response = await sync_client.aio.models.generate_content(
+        _ = await sync_client.aio.models.generate_content(
             model="gemini-2.0-flash",
             contents="hello how are you",
         )
@@ -152,10 +155,9 @@ class TestGeminiAPI:
         assert usage_last.providers[0].prompt_tokens > 0
         assert usage_last.providers[0].completion_tokens > 0
         assert usage_last.providers[0].total_tokens > 0
-        
 
     def test_sync_completion_with_wipe(self, sync_client):
-        response = sync_client.models.generate_content(
+        _ = sync_client.models.generate_content(
             model="gemini-2.0-flash",
             contents="hello how are you",
         )
@@ -186,7 +188,7 @@ class TestGeminiAPI:
         assert usage_last.completion_tokens == 0
         assert usage_last.total_tokens == 0
 
-        response = sync_client.models.generate_content(
+        _ = sync_client.models.generate_content(
             model="gemini-2.0-flash",
             contents="hello how are you",
         )
@@ -208,4 +210,4 @@ class TestGeminiAPI:
         assert usage_last.providers[0].provider == "gemini"
         assert usage_last.providers[0].prompt_tokens > 0
         assert usage_last.providers[0].completion_tokens > 0
-        assert usage_last.providers[0].total_tokens > 0 
+        assert usage_last.providers[0].total_tokens > 0

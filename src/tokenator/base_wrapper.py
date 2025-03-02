@@ -112,7 +112,10 @@ class BaseWrapper:
             try:
                 self._log_usage_impl(token_usage_stats, session, execution_id)
                 session.commit()
-                logger.debug("Successfully committed token usage for execution_id: %s", execution_id)
+                logger.debug(
+                    "Successfully committed token usage for execution_id: %s",
+                    execution_id,
+                )
             except Exception as e:
                 logger.error("Failed to log token usage: %s", str(e))
                 session.rollback()

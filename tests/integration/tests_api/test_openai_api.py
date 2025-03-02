@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @pytest.mark.skipif(
     not os.getenv("OPENAI_API_KEY"),
     reason="OPENAI_API_KEY environment variable not set",
@@ -228,7 +229,6 @@ class TestOpenAIAPI:
         )
         assert usage_last.providers[0].total_tokens == response.usage.total_tokens
 
-        
     def test_sync_completion_with_wipe(self, sync_client):
         response = sync_client.chat.completions.create(
             model="gpt-4o",

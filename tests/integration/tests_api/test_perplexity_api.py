@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @pytest.mark.skipif(
     not os.getenv("PERPLEXITY_API_KEY"),
     reason="PERPLEXITY_API_KEY environment variable not set",

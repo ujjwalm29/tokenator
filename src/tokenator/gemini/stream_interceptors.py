@@ -3,7 +3,6 @@
 import logging
 from typing import AsyncIterator, Callable, List, Optional, TypeVar, Iterator
 
-from google.genai.types import GenerateContentResponse
 
 logger = logging.getLogger(__name__)
 
@@ -75,4 +74,4 @@ class GeminiSyncStreamInterceptor(Iterator[_T]):
 
         # Intercept each chunk
         self._chunks.append(chunk)
-        return chunk 
+        return chunk

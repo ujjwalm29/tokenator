@@ -1,6 +1,6 @@
 """Gemini client wrapper with token usage tracking."""
 
-from typing import Any, Optional, Union, Iterator, AsyncIterator
+from typing import Any, Optional, Iterator, AsyncIterator
 import logging
 
 from google import genai
@@ -39,12 +39,16 @@ def _create_usage_callback(execution_id, log_usage_fn):
             model=chunks[0].model_version,
             usage=TokenMetrics(),
         )
-        
+
         # Only take usage from the last chunk as it contains complete usage info
         last_chunk = chunks[-1]
         if last_chunk.usage_metadata:
-            usage_data.usage.prompt_tokens = last_chunk.usage_metadata.prompt_token_count
-            usage_data.usage.completion_tokens = last_chunk.usage_metadata.candidates_token_count or 0
+            usage_data.usage.prompt_tokens = (
+                last_chunk.usage_metadata.prompt_token_count
+            )
+            usage_data.usage.completion_tokens = (
+                last_chunk.usage_metadata.candidates_token_count or 0
+            )
             usage_data.usage.total_tokens = last_chunk.usage_metadata.total_token_count
             log_usage_fn(usage_data, execution_id=execution_id)
 
@@ -71,7 +75,7 @@ class BaseGeminiWrapper(BaseWrapper):
                     total_tokens=response.usage_metadata.total_token_count,
                 )
                 return TokenUsageStats(model=response.model_version, usage=usage)
-            
+
             elif isinstance(response, dict):
                 usage_dict = response.get("usage_metadata")
                 if not usage_dict:
@@ -106,38 +110,49 @@ class BaseGeminiWrapper(BaseWrapper):
         if self._async_wrapper is None:
             self._async_wrapper = AsyncGeminiWrapper(self)
         return self._async_wrapper
-    
+
     def count_tokens(self, *args: Any, **kwargs: Any):
         return self.client.models.count_tokens(*args, **kwargs)
 
+
 class AsyncGeminiWrapper:
     """Async wrapper for Gemini client to match the official SDK structure."""
-    
+
     def __init__(self, wrapper: BaseGeminiWrapper):
         self.wrapper = wrapper
         self._models = None
-    
+
     @property
     def models(self):
         if self._models is None:
             self._models = AsyncModelsWrapper(self.wrapper)
         return self._models
 
+
 class AsyncModelsWrapper:
     """Async wrapper for models to match the official SDK structure."""
-    
+
     def __init__(self, wrapper: BaseGeminiWrapper):
         self.wrapper = wrapper
-    
-    async def generate_content(self, *args: Any, **kwargs: Any) -> GenerateContentResponse:
+
+    async def generate_content(
+        self, *args: Any, **kwargs: Any
+    ) -> GenerateContentResponse:
         """Async method for generate_content."""
         execution_id = kwargs.pop("execution_id", None)
-        return await self.wrapper.generate_content_async(*args, execution_id=execution_id, **kwargs)
-    
-    async def generate_content_stream(self, *args: Any, **kwargs: Any) -> AsyncIterator[GenerateContentResponse]:
+        return await self.wrapper.generate_content_async(
+            *args, execution_id=execution_id, **kwargs
+        )
+
+    async def generate_content_stream(
+        self, *args: Any, **kwargs: Any
+    ) -> AsyncIterator[GenerateContentResponse]:
         """Async method for generate_content_stream."""
         execution_id = kwargs.pop("execution_id", None)
-        return await self.wrapper.generate_content_stream_async(*args, execution_id=execution_id, **kwargs)
+        return await self.wrapper.generate_content_stream_async(
+            *args, execution_id=execution_id, **kwargs
+        )
+
 
 class GeminiWrapper(BaseGeminiWrapper):
     def generate_content(
@@ -157,7 +172,9 @@ class GeminiWrapper(BaseGeminiWrapper):
         self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any
     ) -> Iterator[GenerateContentResponse]:
         """Generate content with streaming and log token usage."""
-        logger.debug("Generating content stream with args: %s, kwargs: %s", args, kwargs)
+        logger.debug(
+            "Generating content stream with args: %s, kwargs: %s", args, kwargs
+        )
 
         base_stream = self.client.models.generate_content_stream(*args, **kwargs)
         return GeminiSyncStreamInterceptor(
@@ -182,9 +199,13 @@ class GeminiWrapper(BaseGeminiWrapper):
         self, *args: Any, execution_id: Optional[str] = None, **kwargs: Any
     ) -> AsyncIterator[GenerateContentResponse]:
         """Generate content with async streaming and log token usage."""
-        logger.debug("Generating content stream async with args: %s, kwargs: %s", args, kwargs)
+        logger.debug(
+            "Generating content stream async with args: %s, kwargs: %s", args, kwargs
+        )
 
-        base_stream = await self.client.aio.models.generate_content_stream(*args, **kwargs)
+        base_stream = await self.client.aio.models.generate_content_stream(
+            *args, **kwargs
+        )
         return GeminiAsyncStreamInterceptor(
             base_stream=base_stream,
             usage_callback=_create_usage_callback(execution_id, self._log_usage),
@@ -206,4 +227,4 @@ def tokenator_gemini(
     if not isinstance(client, genai.Client):
         raise ValueError("Client must be an instance of genai.Client")
 
-    return GeminiWrapper(client=client, db_path=db_path, provider=provider) 
+    return GeminiWrapper(client=client, db_path=db_path, provider=provider)
