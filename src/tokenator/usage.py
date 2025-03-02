@@ -54,7 +54,8 @@ class TokenUsageService:
                     prompt_audio=info.get("input_cost_per_audio_token"),
                     completion_audio=info.get("output_cost_per_audio_token"),
                     prompt_cached_input=info.get("cache_read_input_token_cost") or 0,
-                    prompt_cached_creation=info.get("cache_read_creation_token_cost") or 0,
+                    prompt_cached_creation=info.get("cache_read_creation_token_cost")
+                    or 0,
                 )
                 model_costs[model] = rate
 
@@ -96,7 +97,9 @@ class TokenUsageService:
                 elif f"{usage.provider}/{usage.model}" in self.MODEL_COSTS:
                     model_key = f"{usage.provider}/{usage.model}"
                 else:
-                    matched_keys = [k for k in self.MODEL_COSTS.keys() if usage.model in k]
+                    matched_keys = [
+                        k for k in self.MODEL_COSTS.keys() if usage.model in k
+                    ]
                     if matched_keys:
                         model_key = matched_keys[0]
                         logger.warning(
@@ -164,7 +167,9 @@ class TokenUsageService:
                             )
 
                         prompt_cost = prompt_text_tokens * model_rates.prompt
-                        completion_cost = completion_text_tokens * model_rates.completion
+                        completion_cost = (
+                            completion_text_tokens * model_rates.completion
+                        )
                         model_cost += prompt_cost + completion_cost
 
                         # Audio token costs
@@ -530,7 +535,9 @@ class TokenUsageService:
             session = get_session()()
             try:
                 query = (
-                    session.query(TokenUsage).order_by(TokenUsage.created_at.desc()).first()
+                    session.query(TokenUsage)
+                    .order_by(TokenUsage.created_at.desc())
+                    .first()
                 )
                 if query:
                     return self.for_execution(query.execution_id)
@@ -549,7 +556,9 @@ class TokenUsageService:
             if not state.is_tokenator_enabled:
                 return TokenUsageReport()
 
-            logger.warning("Getting cost analysis for all time. This may take a while...")
+            logger.warning(
+                "Getting cost analysis for all time. This may take a while..."
+            )
             session = get_session()()
             try:
                 query = session.query(TokenUsage)
@@ -564,7 +573,9 @@ class TokenUsageService:
             return TokenUsageReport()
 
     def wipe(self):
-        logger.warning("All your usage data is about to be wiped, are you sure you want to do this? You have 5 seconds to cancel this operation.")
+        logger.warning(
+            "All your usage data is about to be wiped, are you sure you want to do this? You have 5 seconds to cancel this operation."
+        )
         for i in range(5, 0, -1):
             logger.warning(str(i))
             time.sleep(1)

@@ -27,7 +27,8 @@ class TestDeepSeekAPI:
     def sync_client(self, temp_db):
         return tokenator_openai(
             OpenAI(
-                api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com"
+                api_key=os.getenv("DEEPSEEK_API_KEY"),
+                base_url="https://api.deepseek.com",
             ),
             db_path=temp_db,
             provider="deepseek",
@@ -37,7 +38,8 @@ class TestDeepSeekAPI:
     def async_client(self, temp_db):
         return tokenator_openai(
             AsyncOpenAI(
-                api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com"
+                api_key=os.getenv("DEEPSEEK_API_KEY"),
+                base_url="https://api.deepseek.com",
             ),
             db_path=temp_db,
             provider="deepseek",

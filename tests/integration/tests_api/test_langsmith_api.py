@@ -27,10 +27,7 @@ class TestLangsmithAPI:
 
     @pytest.fixture
     def sync_client(self, temp_db):
-        return tokenator_openai(
-            wrap_openai(OpenAI()),
-            db_path=temp_db
-        )
+        return tokenator_openai(wrap_openai(OpenAI()), db_path=temp_db)
 
     @pytest.fixture
     def async_client(self, temp_db):
@@ -169,4 +166,3 @@ class TestLangsmithAPI:
         assert usage_last.providers[0].prompt_tokens > 1
         assert usage_last.providers[0].completion_tokens > 1
         assert usage_last.providers[0].total_tokens > 1
-
