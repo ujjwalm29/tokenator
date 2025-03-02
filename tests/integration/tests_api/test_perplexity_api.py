@@ -32,7 +32,7 @@ class TestPerplexityAPI:
 
     def test_sync_completion_pricing(self, sync_client):
         response = sync_client.chat.completions.create(
-            model="llama-3.1-sonar-large-128k-online",
+            model="sonar",
             messages=[{"role": "user", "content": "Write a short story about a cat"}],
         )
 
