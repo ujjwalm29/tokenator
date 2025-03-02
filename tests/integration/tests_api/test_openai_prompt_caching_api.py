@@ -7,6 +7,9 @@ from tokenator.openai.client_openai import tokenator_openai
 from tokenator.schemas import TokenUsage
 from tokenator import usage
 import tempfile
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Define tools
 tools = [
