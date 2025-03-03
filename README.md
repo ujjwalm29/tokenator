@@ -10,6 +10,9 @@ Afraid not, tokenator is here! With tokenator's easy to use functions, you can s
 
 Get started with just 3 lines of code!
 
+Tokenator supports the official SDKs from openai, anthropic and google-genai(the new one).
+LLM providers which use the openai SDK like perplexity, deepseek and xAI are also supported.
+
 ## Installation
 
 ```bash
@@ -155,6 +158,54 @@ print(usage.last_execution().model_dump_json(indent=4))
 """
 ```
 
+### Google (Gemini - through AI studio)
+
+```python
+from google import genai
+from tokenator import tokenator_gemini
+
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Wrap it with Tokenator
+client = tokenator_gemini(gemini_client)
+
+# Use it exactly like the google-genai client
+response = models.generate_content(
+    model="gemini-2.0-flash",
+    contents="hello how are you",
+)
+
+print(response)
+
+print(usage.last_execution().model_dump_json(indent=4))
+"""
+{
+    "total_cost": 0.0001,
+    "total_tokens": 23,
+    "prompt_tokens": 10,
+    "completion_tokens": 13,
+    "providers": [
+        {
+            "total_cost": 0.0001,
+            "total_tokens": 23,
+            "prompt_tokens": 10,
+            "completion_tokens": 13,
+            "provider": "gemini",
+            "models": [
+                {
+                    "total_cost": 0.0004,
+                    "total_tokens": 79,
+                    "prompt_tokens": 52,
+                    "completion_tokens": 27,
+                    "model": "gemini-2.0-flash"
+                }
+            ]
+        }
+    ]
+}
+"""
+```
+
 ### xAI
 
 You can use xAI models through the `openai` SDK and track usage using `provider` parameter in `tokenator`.
@@ -203,7 +254,7 @@ client = tokenator_openai(perplexity_client, db_path=temp_db, provider="perplexi
 
 # Use it exactly like the OpenAI client but with perplexity models
 response = client.chat.completions.create(
-    model="llama-3.1-sonar-small-128k-online",
+    model="sonar",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 
