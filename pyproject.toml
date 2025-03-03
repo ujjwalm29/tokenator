@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tokenator"
-version = "0.1.16"
+version = "0.2.0"
 description = "Token usage tracking wrapper for LLMs"
 authors = ["Ujjwal Maheshwari <ujjwalm29@gmail.com>"]
 readme = "README.md"

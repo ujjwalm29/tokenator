@@ -38,7 +38,7 @@ class TestOpenAIDisabledAPI:
         assert not state.is_tokenator_enabled
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "Hello!"}],
         )
 
@@ -55,7 +55,7 @@ class TestOpenAIDisabledAPI:
         assert not state.is_tokenator_enabled
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "Hello!"}],
             stream=True,
         )
@@ -76,7 +76,7 @@ class TestOpenAIDisabledAPI:
         assert not state.is_tokenator_enabled
 
         response = await client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "Hello!"}],
         )
 
@@ -94,7 +94,7 @@ class TestOpenAIDisabledAPI:
         assert not state.is_tokenator_enabled
 
         response = await client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "Hello!"}],
             stream=True,
         )
