@@ -178,7 +178,7 @@ class TestAnthropicPromptCachingAPI:
         # call it once to warm up the cache
         # Note : not using tokenator_anthropic here in case test is run repeatedly something might be cached in this call(which we don't want)
         _ = simple_anthropic_client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-3-5-sonnet-20241022",
             tools=tools,
             system=[
                 {
@@ -195,7 +195,7 @@ class TestAnthropicPromptCachingAPI:
 
         # call it again to check the cache
         response: Usage = sync_client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-3-5-sonnet-20241022",
             tools=tools,
             system=[
                 {
