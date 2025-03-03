@@ -33,7 +33,7 @@ class TestOpenAIAPI:
 
     def test_sync_completion(self, sync_client):
         response = sync_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
         )
 
@@ -67,7 +67,7 @@ class TestOpenAIAPI:
 
         chunks = []
         for chunk in sync_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
             stream=True,
             stream_options={"include_usage": True},
@@ -96,7 +96,7 @@ class TestOpenAIAPI:
     @pytest.mark.asyncio
     async def test_async_completion(self, async_client):
         response = await async_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
         )
 
@@ -131,7 +131,7 @@ class TestOpenAIAPI:
 
         chunks = []
         stream = await async_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
             stream=True,
             stream_options={"include_usage": True},
@@ -166,7 +166,7 @@ class TestOpenAIAPI:
             age: int
 
         response = sync_client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
             response_format=User,
         )
@@ -202,7 +202,7 @@ class TestOpenAIAPI:
             age: int
 
         response = await async_client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
             response_format=User,
         )
@@ -231,7 +231,7 @@ class TestOpenAIAPI:
 
     def test_sync_completion_with_wipe(self, sync_client):
         response = sync_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
         )
 
@@ -265,7 +265,7 @@ class TestOpenAIAPI:
         assert usage_last.total_tokens == 0
 
         response = sync_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
         )
 

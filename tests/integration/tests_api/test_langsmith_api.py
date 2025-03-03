@@ -39,7 +39,7 @@ class TestLangsmithAPI:
     @traceable
     def test_sync_completion(self, sync_client):
         response = sync_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
         )
 
@@ -74,7 +74,7 @@ class TestLangsmithAPI:
 
         chunks = []
         for chunk in sync_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
             stream=True,
             stream_options={"include_usage": True},
@@ -104,7 +104,7 @@ class TestLangsmithAPI:
     @pytest.mark.asyncio
     async def test_async_completion(self, async_client):
         response = await async_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
         )
 
@@ -140,7 +140,7 @@ class TestLangsmithAPI:
 
         chunks = []
         stream = await async_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": "hello how are you"}],
             stream=True,
             stream_options={"include_usage": True},
