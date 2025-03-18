@@ -54,7 +54,7 @@ class TokenUsageService:
                     prompt_audio=info.get("input_cost_per_audio_token"),
                     completion_audio=info.get("output_cost_per_audio_token"),
                     prompt_cached_input=info.get("cache_read_input_token_cost") or 0,
-                    prompt_cached_creation=info.get("cache_read_creation_token_cost")
+                    prompt_cached_creation=info.get("cache_creation_input_token_cost")
                     or 0,
                 )
                 model_costs[model] = rate

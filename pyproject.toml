@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tokenator"
-version = "0.2.0"
-description = "Token usage tracking wrapper for LLMs"
+version = "0.2.1"
+description = "Token usage and cost tracking for LLMs"
 authors = ["Ujjwal Maheshwari <ujjwalm29@gmail.com>"]
 readme = "README.md"
 license = "MIT"
